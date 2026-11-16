@@ -1,11 +1,12 @@
 import { useEffect, useState } from "react";
 import { GAME_NAME, GAME_SUBTITLE, GAME_VERSION } from "@sovereign/shared";
 import { fetchHealth } from "../api";
+import { startNewCampaign } from "../sim/simClient";
 import { useGameStore } from "../store/gameStore";
+import { ClockControls } from "./ClockControls";
 
 export function TopBar() {
   const seed = useGameStore((s) => s.world.seed);
-  const regenerateWorld = useGameStore((s) => s.regenerateWorld);
   const [online, setOnline] = useState<boolean | null>(null);
 
   useEffect(() => {
@@ -29,9 +30,11 @@ export function TopBar() {
         <span className="brand-sub">{GAME_SUBTITLE}</span>
       </div>
       <div className="spacer" />
+      <ClockControls />
+      <div className="spacer" />
       <span className="seed">World seed {seed}</span>
-      <button className="btn" onClick={regenerateWorld}>
-        New world (dev)
+      <button className="btn" onClick={startNewCampaign}>
+        New campaign (dev)
       </button>
       <span className="status">
         <span className={`dot ${statusClass}`} />

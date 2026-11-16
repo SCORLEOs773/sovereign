@@ -12,9 +12,10 @@ interface GameState {
   selectCountry: (id: number | null) => void;
   hoverCountry: (id: number | null) => void;
   regenerateWorld: () => void;
+  setWorldSeed: (seed: number) => void;
 }
 
-export const useGameStore = create<GameState>()((set) => ({
+export const useGameStore = create<GameState>()((set, get) => ({
   world: generateWorld(DEFAULT_WORLD_SEED),
   selectedCountryId: null,
   hoveredCountryId: null,
@@ -26,4 +27,12 @@ export const useGameStore = create<GameState>()((set) => ({
       selectedCountryId: null,
       hoveredCountryId: null,
     }),
+  setWorldSeed: (seed) => {
+    if (get().world.seed === seed) return;
+    set({
+      world: generateWorld(seed),
+      selectedCountryId: null,
+      hoveredCountryId: null,
+    });
+  },
 }));
