@@ -12,8 +12,10 @@
   },
   "dependencies": {
     "@sovereign/shared": "*",
+    "pixi.js": "^8.23.0",
     "react": "^19.3.1",
-    "react-dom": "^19.3.1"
+    "react-dom": "^19.3.1",
+    "zustand": "^5.1.0"
   },
   "devDependencies": {
     "@types/node": "^24.19.2",
