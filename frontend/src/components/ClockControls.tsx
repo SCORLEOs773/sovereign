@@ -15,7 +15,7 @@ const KEY_SPEEDS: Record<string, SimSpeed> = {
 };
 
 export function ClockControls() {
-  const tick = useSimStore((s) => s.state.tick);
+  const tick = useSimStore((s) => s.state?.tick ?? 0);
   const speed = useSimStore((s) => s.speed);
   const ready = useSimStore((s) => s.ready);
   const lastRunning = useRef<SimSpeed>(1);

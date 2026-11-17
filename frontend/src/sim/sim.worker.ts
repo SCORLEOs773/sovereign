@@ -2,7 +2,9 @@ import {
   SimCommandSchema,
   SimulationEngine,
   computeOfflineTicks,
+  createInitialSimState,
   type SimEvent,
+  type SimState,
 } from "@sovereign/shared";
 
 interface WorkerScope {
@@ -12,13 +14,18 @@ interface WorkerScope {
 const scope = self as unknown as WorkerScope;
 
 const LOOP_INTERVAL_MS = 50;
+const POST_INTERVAL_MS = 200;
 
 let engine: SimulationEngine | null = null;
 let timer: ReturnType<typeof setInterval> | null = null;
 let lastTime = 0;
+let lastPost = 0;
 
-function postState(): void {
+function postState(force: boolean): void {
   if (!engine) return;
+  const now = performance.now();
+  if (!force && now - lastPost < POST_INTERVAL_MS) return;
+  lastPost = now;
   scope.postMessage({
     type: "state",
     speed: engine.getSpeed(),
@@ -31,7 +38,8 @@ function loop(): void {
   const now = performance.now();
   const delta = now - lastTime;
   lastTime = now;
-  if (engine.advance(delta) > 0) postState();
+  const ran = engine.advance(delta);
+  if (ran > 0) postState(engine.getState().gameOver !== null);
 }
 
 scope.onmessage = (event) => {
@@ -43,11 +51,21 @@ scope.onmessage = (event) => {
   const command = parsed.data;
 
   if (command.type === "init") {
-    if (timer !== null) clearInterval(timer);
+    let initial: SimState;
+    if (command.snapshot) {
+      initial = command.snapshot.state;
+    } else if (command.playerCountryId !== null) {
+      initial = createInitialSimState(
+        command.worldSeed,
+        command.playerCountryId,
+      );
+    } else {
+      console.error("init needs either a snapshot or a player country");
+      return;
+    }
 
-    engine = new SimulationEngine(
-      command.snapshot ? command.snapshot.state : undefined,
-    );
+    if (timer !== null) clearInterval(timer);
+    engine = new SimulationEngine(initial);
     let offline = {
       ticks: 0,
       capped: false,
@@ -73,10 +91,15 @@ scope.onmessage = (event) => {
     });
 
     lastTime = performance.now();
+    lastPost = lastTime;
     timer = setInterval(loop, LOOP_INTERVAL_MS);
-  } else {
+  } else if (command.type === "setSpeed") {
     if (!engine) return;
     engine.setSpeed(command.speed);
-    postState();
+    postState(true);
+  } else {
+    if (!engine) return;
+    engine.applyPolicy(command.policy);
+    postState(true);
   }
 };

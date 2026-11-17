@@ -22,3 +22,15 @@ export function createRng(seed: number): Rng {
     int: (maxExclusive) => Math.floor(next() * maxExclusive),
   };
 }
+
+/** Combine three numbers into one well-mixed seed. */
+export function mixSeed(a: number, b: number, c: number): number {
+  let h =
+    Math.imul(a ^ 0x9e3779b9, 0x85ebca6b) ^
+    Math.imul((b + 0x7f4a7c15) | 0, 0xc2b2ae35) ^
+    Math.imul((c + 1) | 0, 0x27d4eb2f);
+  h ^= h >>> 15;
+  h = Math.imul(h, 0x2c1b3c6d);
+  h ^= h >>> 12;
+  return h >>> 0;
+}

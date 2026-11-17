@@ -1,27 +1,24 @@
 import { useEffect } from "react";
-import { CountryPanel } from "./components/CountryPanel";
 import { DeveloperCredit } from "./components/DeveloperCredit";
-import { OfflineBanner } from "./components/OfflineBanner";
-import { SimDebug } from "./components/SimDebug";
-import { TopBar } from "./components/TopBar";
-import { WorldMap } from "./components/WorldMap";
-import { startSimulation } from "./sim/simClient";
+import { GameScreen } from "./components/GameScreen";
+import { MainMenu } from "./components/MainMenu";
+import { SetupScreen } from "./components/SetupScreen";
+import { bootstrap } from "./sim/simClient";
+import { useUiStore } from "./store/uiStore";
 
 export function App() {
+  const screen = useUiStore((s) => s.screen);
+
   useEffect(() => {
-    void startSimulation();
+    void bootstrap();
   }, []);
 
   return (
-    <div className="app">
-      <TopBar />
-      <div className="workspace">
-        <WorldMap />
-        <CountryPanel />
-      </div>
-      <OfflineBanner />
-      <SimDebug />
+    <>
+      {screen === "menu" && <MainMenu />}
+      {screen === "setup" && <SetupScreen />}
+      {screen === "game" && <GameScreen />}
       <DeveloperCredit />
-    </div>
+    </>
   );
 }

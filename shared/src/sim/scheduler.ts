@@ -1,3 +1,4 @@
+import { runMonthly } from "./monthly";
 import type { SimState } from "./state";
 import { TICKS_PER_DAY, TICKS_PER_HOUR, tickToDate } from "./time";
 
@@ -22,7 +23,6 @@ export class Scheduler {
   }
 }
 
-/** Calendar tasks for now. Economy, population and AI systems will be added here later. */
 export function createDefaultScheduler(): Scheduler {
   return new Scheduler([
     {
@@ -40,10 +40,13 @@ export function createDefaultScheduler(): Scheduler {
       },
     },
     {
-      id: "calendar.month",
+      id: "world.monthly",
       everyTicks: TICKS_PER_DAY,
       run: (s) => {
-        if (tickToDate(s.tick).getUTCDate() === 1) s.months += 1;
+        if (tickToDate(s.tick).getUTCDate() === 1) {
+          s.months += 1;
+          runMonthly(s);
+        }
       },
     },
   ]);

@@ -5,17 +5,14 @@ import {
   formatPercent,
   toCssColor,
 } from "../format";
+import { Stat } from "./Stat";
 
-function Stat({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="stat">
-      <span className="label">{label}</span>
-      <span>{value}</span>
-    </div>
-  );
+interface Props {
+  /** If given, a button is shown to start a campaign as the selected nation. */
+  onPlay?: (countryId: number) => void;
 }
 
-export function CountryPanel() {
+export function CountryPanel({ onPlay }: Props) {
   const world = useGameStore((s) => s.world);
   const selectedId = useGameStore((s) => s.selectedCountryId);
   const selectCountry = useGameStore((s) => s.selectCountry);
@@ -70,6 +67,12 @@ export function CountryPanel() {
           </div>
         </div>
       </div>
+
+      {onPlay && (
+        <button className="btn-primary full" onClick={() => onPlay(country.id)}>
+          Lead {country.name}
+        </button>
+      )}
 
       <h4 className="group">General</h4>
       <Stat label="Capital" value={country.capital.name} />

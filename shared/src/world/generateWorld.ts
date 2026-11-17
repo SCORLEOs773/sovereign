@@ -324,6 +324,7 @@ export function generateWorld(seed: number): World {
       color: def.color,
       governmentType: def.governmentType,
       archetype: profile.label,
+      archetypeId: def.archetype,
       area,
       population,
       gdp: population * gdpPerCapita,

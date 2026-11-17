@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { PolicyPatchSchema } from "./policy";
 import { SimSpeedSchema, type SimSpeed } from "./speed";
 import { SimSnapshotSchema, type SimState } from "./state";
 
@@ -7,12 +8,18 @@ export const SimCommandSchema = z.discriminatedUnion("type", [
   z.object({
     type: z.literal("init"),
     worldSeed: z.number().int(),
+    /** Required for a new campaign (when snapshot is null) */
+    playerCountryId: z.number().int().min(0).nullable(),
     snapshot: SimSnapshotSchema.nullable(),
     offlineSeconds: z.number().min(0),
   }),
   z.object({
     type: z.literal("setSpeed"),
     speed: SimSpeedSchema,
+  }),
+  z.object({
+    type: z.literal("setPolicy"),
+    policy: PolicyPatchSchema,
   }),
 ]);
 export type SimCommand = z.infer<typeof SimCommandSchema>;

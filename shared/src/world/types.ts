@@ -1,3 +1,5 @@
+import type { ArchetypeId } from "./countryData";
+
 export interface Capital {
   name: string;
   x: number;
@@ -12,6 +14,7 @@ export interface Country {
   color: number;
   governmentType: string;
   archetype: string;
+  archetypeId: ArchetypeId;
   /** Number of map cells owned */
   area: number;
   population: number;
