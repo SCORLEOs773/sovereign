@@ -22,6 +22,9 @@ export const NationStateSchema = z.object({
   name: z.string(),
   region: z.string(),
   governmentType: z.string(),
+  /** Capital position on the world map */
+  x: z.number(),
+  y: z.number(),
   population: z.number(),
   /** Annual GDP in US dollars */
   gdp: z.number(),
@@ -48,6 +51,18 @@ export const NationStateSchema = z.object({
   tradeBonus: z.number(),
   /** Growth lost to sanctions, refreshed monthly */
   sanctionPenalty: z.number(),
+  /** Active-duty personnel */
+  army: z.number(),
+  /** Equipment quality, 0..100 */
+  equipment: z.number(),
+  /** Share of the population the nation recruits at its starting defence budget */
+  armyRate: z.number(),
+  /** 0..100, builds while at war and fades in peace */
+  warWeariness: z.number(),
+  /** Extra annual cost of fighting, as a share of GDP, refreshed monthly */
+  warCostRate: z.number(),
+  /** Growth lost to war and occupation, refreshed monthly */
+  warPenalty: z.number(),
   policy: PolicySchema,
   /** The policy the nation started with, used as the neutral reference point */
   baseline: PolicySchema,
@@ -69,10 +84,11 @@ export const HistorySchema = z.object({
   unemployment: z.array(z.number()),
   treasury: z.array(z.number()),
   debt: z.array(z.number()),
+  power: z.array(z.number()),
 });
 
 export const GameOverSchema = z.object({
-  reason: z.enum(["election", "collapse", "retirement"]),
+  reason: z.enum(["election", "collapse", "retirement", "conquest"]),
   tick: z.number().int(),
 });
 
@@ -99,6 +115,31 @@ export const ProposalSchema = z.object({
   expires: z.number().int(),
 });
 
+export const OccupationSchema = z.object({
+  holder: z.number().int(),
+  victim: z.number().int(),
+  /** Share of the victim's territory held, 0..1 */
+  fraction: z.number(),
+});
+
+export const WarSchema = z.object({
+  id: z.number().int(),
+  /** The first entry is the leader, the rest are allies who joined */
+  attackers: z.array(z.number().int()),
+  defenders: z.array(z.number().int()),
+  start: z.number().int(),
+  months: z.number().int(),
+  /** -100..100, positive favours the attackers */
+  score: z.number(),
+  occupations: z.array(OccupationSchema),
+});
+
+export const TruceSchema = z.object({
+  a: z.number().int(),
+  b: z.number().int(),
+  until: z.number().int(),
+});
+
 export const DecisionOptionSchema = z.object({
   id: z.string(),
   label: z.string(),
@@ -110,6 +151,7 @@ export const PendingDecisionSchema = z.object({
   title: z.string(),
   text: z.string(),
   target: z.number().int().nullable(),
+  other: z.number().int().nullable(),
   options: z.array(DecisionOptionSchema),
   tick: z.number().int(),
 });
@@ -137,6 +179,11 @@ export const SimStateSchema = z.object({
   nextId: z.number().int(),
   electionsWon: z.number().int(),
   startGdp: z.number(),
+  /** adjacency[id] lists the nations sharing a land border with nation id */
+  adjacency: z.array(z.array(z.number().int())),
+  wars: z.array(WarSchema),
+  truces: z.array(TruceSchema),
+  warsWon: z.number().int(),
 });
 
 export const SimSnapshotSchema = z.object({
@@ -156,6 +203,9 @@ export type GameOver = z.infer<typeof GameOverSchema>;
 export type Treaty = z.infer<typeof TreatySchema>;
 export type Sanction = z.infer<typeof SanctionSchema>;
 export type Proposal = z.infer<typeof ProposalSchema>;
+export type Occupation = z.infer<typeof OccupationSchema>;
+export type War = z.infer<typeof WarSchema>;
+export type Truce = z.infer<typeof TruceSchema>;
 export type DecisionOption = z.infer<typeof DecisionOptionSchema>;
 export type PendingDecision = z.infer<typeof PendingDecisionSchema>;
 export type SimState = z.infer<typeof SimStateSchema>;
@@ -171,5 +221,6 @@ export function createEmptyHistory(): History {
     unemployment: [],
     treasury: [],
     debt: [],
+    power: [],
   };
 }

@@ -5,16 +5,28 @@ import {
   type World,
 } from "@sovereign/shared";
 import { useGameStore } from "../store/gameStore";
+import type { ArmyCircle, WarOverlay } from "./warOverlay";
 
 const OCEAN_BACKGROUND = 0x0b1a2c;
 const OCEAN_WORLD = 0x12304f;
+const WAR_RED = 0xff5a4a;
 
 export interface MapController {
   zoomBy: (factor: number) => void;
   resetView: () => void;
   /** Recolour countries, for example for the relations or economy map modes */
   setColors: (colors: Map<number, number>) => void;
+  /** Occupied territory, front-line battles and war arrows */
+  setWarOverlay: (overlay: WarOverlay) => void;
+  /** Circles at the capitals sized by military power (military map mode) */
+  setArmyCircles: (circles: ArmyCircle[]) => void;
   destroy: () => void;
+}
+
+interface CellInfo {
+  poly: number[];
+  x: number;
+  y: number;
 }
 
 function lighten(color: number, amount: number): number {
@@ -68,10 +80,23 @@ export async function createMapController(
 
   const land = new Graphics();
   const polysByCountry = new Map<number, number[][]>();
+  const cellsByCountry = new Map<number, CellInfo[]>();
   for (const cell of world.cells) {
     const list = polysByCountry.get(cell.countryId);
     if (list) list.push(cell.polygon);
     else polysByCountry.set(cell.countryId, [cell.polygon]);
+
+    let cx = 0;
+    let cy = 0;
+    const count = cell.polygon.length / 2;
+    for (let i = 0; i < cell.polygon.length; i += 2) {
+      cx += cell.polygon[i]!;
+      cy += cell.polygon[i + 1]!;
+    }
+    const info: CellInfo = { poly: cell.polygon, x: cx / count, y: cy / count };
+    const infos = cellsByCountry.get(cell.countryId);
+    if (infos) infos.push(info);
+    else cellsByCountry.set(cell.countryId, [info]);
   }
 
   const drawLand = (): void => {
@@ -83,6 +108,7 @@ export async function createMapController(
   };
   drawLand();
 
+  const occupationLayer = new Graphics();
   const hoverFill = new Graphics();
   const selectFill = new Graphics();
 
@@ -96,10 +122,13 @@ export async function createMapController(
   coasts.stroke({ width: 1.2, color: 0x081624, alpha: 0.95, cap: "round" });
 
   const selectOutline = new Graphics();
+  const armyLayer = new Container();
+  const warLayer = new Graphics();
 
   const markers: Graphics[] = [];
   const labels: Text[] = [];
   const markerLayer = new Container();
+  const battleLayer = new Container();
   const labelLayer = new Container();
   for (const country of countryById.values()) {
     const marker = new Graphics()
@@ -130,12 +159,16 @@ export async function createMapController(
   viewport.addChild(
     ocean,
     land,
+    occupationLayer,
     hoverFill,
     selectFill,
     borders,
     coasts,
     selectOutline,
+    armyLayer,
+    warLayer,
     markerLayer,
+    battleLayer,
     labelLayer,
   );
 
@@ -186,6 +219,113 @@ export async function createMapController(
     }
   });
 
+  // ---------- War visuals ----------
+  const sortedCells = new Map<string, CellInfo[]>();
+  /** The victim's cells ordered from the side nearest the invader's capital. */
+  const cellsNear = (victim: number, holder: number): CellInfo[] => {
+    const key = `${victim}:${holder}`;
+    let list = sortedCells.get(key);
+    if (!list) {
+      list = [...(cellsByCountry.get(victim) ?? [])];
+      const cap = countryById.get(holder)?.capital;
+      if (cap) {
+        list.sort(
+          (a, b) =>
+            Math.hypot(a.x - cap.x, a.y - cap.y) -
+            Math.hypot(b.x - cap.x, b.y - cap.y),
+        );
+      }
+      sortedCells.set(key, list);
+    }
+    return list;
+  };
+
+  const battleMarkers: { g: Graphics; phase: number }[] = [];
+
+  const setWarOverlay = (overlay: WarOverlay): void => {
+    occupationLayer.clear();
+    warLayer.clear();
+    for (const m of battleMarkers) m.g.destroy();
+    battleMarkers.length = 0;
+
+    for (const occupation of overlay.occupations) {
+      const cells = cellsNear(occupation.victim, occupation.holder);
+      const count = Math.min(
+        cells.length,
+        Math.round(occupation.fraction * cells.length),
+      );
+      const color = countryById.get(occupation.holder)?.color ?? 0xffffff;
+
+      for (let i = 0; i < count; i++) {
+        const cell = cells[i]!;
+        occupationLayer
+          .poly(cell.poly)
+          .fill({ color, alpha: 0.82 })
+          .stroke({ width: 1.2, color: 0xffffff, alpha: 0.3 });
+      }
+
+      // Battles rage along the front line
+      const frontier = cells.slice(Math.max(0, count - 4), count);
+      frontier.forEach((cell, index) => {
+        const g = new Graphics()
+          .circle(0, 0, 6)
+          .fill({ color: WAR_RED, alpha: 0.9 })
+          .stroke({ width: 2, color: 0xffffff, alpha: 0.9 });
+        g.position.set(cell.x, cell.y);
+        battleLayer.addChild(g);
+        battleMarkers.push({ g, phase: index * 1.3 + occupation.victim });
+      });
+    }
+
+    for (const arrow of overlay.arrows) {
+      const dx = arrow.x2 - arrow.x1;
+      const dy = arrow.y2 - arrow.y1;
+      const length = Math.hypot(dx, dy);
+      if (length < 40) continue;
+      const ux = dx / length;
+      const uy = dy / length;
+
+      const dash = 14;
+      const gap = 9;
+      const end = length - 24;
+      for (let d = 0; d < end; d += dash + gap) {
+        const to = Math.min(d + dash, end);
+        warLayer
+          .moveTo(arrow.x1 + ux * d, arrow.y1 + uy * d)
+          .lineTo(arrow.x1 + ux * to, arrow.y1 + uy * to);
+      }
+      warLayer.stroke({ width: 2.5, color: WAR_RED, alpha: 0.9, cap: "round" });
+
+      const tipX = arrow.x2 - ux * 8;
+      const tipY = arrow.y2 - uy * 8;
+      const baseX = tipX - ux * 18;
+      const baseY = tipY - uy * 18;
+      warLayer
+        .poly([
+          tipX,
+          tipY,
+          baseX - uy * 8,
+          baseY + ux * 8,
+          baseX + uy * 8,
+          baseY - ux * 8,
+        ])
+        .fill({ color: WAR_RED, alpha: 0.95 });
+    }
+  };
+
+  const setArmyCircles = (circles: ArmyCircle[]): void => {
+    for (const child of armyLayer.removeChildren()) child.destroy();
+    const max = Math.max(1, ...circles.map((c) => c.power));
+    for (const c of circles) {
+      const radius = 6 + 28 * Math.sqrt(c.power / max);
+      const g = new Graphics()
+        .circle(c.x, c.y, radius)
+        .fill({ color: 0xffffff, alpha: 0.22 })
+        .stroke({ width: 1.5, color: 0xffffff, alpha: 0.7 });
+      armyLayer.addChild(g);
+    }
+  };
+
   // ---------- View (zoom and pan) ----------
   let scale = 1;
   let fitScale = 1;
@@ -207,6 +347,17 @@ export async function createMapController(
     for (const m of markers) m.scale.set(1 / scale);
     for (const l of labels) l.scale.set(0.5 / scale);
   };
+
+  // Pulse the battle markers
+  const pulse = (): void => {
+    const t = performance.now() / 1000;
+    for (const m of battleMarkers) {
+      const wave = Math.sin(t * 3 + m.phase);
+      m.g.scale.set((1 + 0.35 * wave) / scale);
+      m.g.alpha = 0.75 + 0.25 * wave;
+    }
+  };
+  app.ticker.add(pulse);
 
   const fit = (): void => {
     fitScale =
@@ -357,9 +508,12 @@ export async function createMapController(
       drawLand();
       redrawHighlights();
     },
+    setWarOverlay,
+    setArmyCircles,
     destroy: () => {
       observer.disconnect();
       unsubscribe();
+      app.ticker.remove(pulse);
       canvas.removeEventListener("wheel", onWheel);
       canvas.removeEventListener("pointerdown", onPointerDown);
       canvas.removeEventListener("pointermove", onPointerMove);

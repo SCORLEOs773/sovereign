@@ -11,6 +11,11 @@ import { createDefaultScheduler, type Scheduler } from "./scheduler";
 import type { SimSpeed } from "./speed";
 import type { SimState, TreatyKind } from "./state";
 import { SIM_CONFIG } from "./time";
+import {
+  playerDeclareWar,
+  playerDemandSurrender,
+  playerProposePeace,
+} from "./wars";
 
 export class SimulationEngine {
   private readonly state: SimState;
@@ -74,6 +79,18 @@ export class SimulationEngine {
   respondProposal(proposalId: number, accept: boolean): void {
     if (!this.state.gameOver)
       playerRespondProposal(this.state, proposalId, accept);
+  }
+
+  declareWar(target: number): void {
+    if (!this.state.gameOver) playerDeclareWar(this.state, target);
+  }
+
+  proposePeace(warId: number): void {
+    if (!this.state.gameOver) playerProposePeace(this.state, warId);
+  }
+
+  demandSurrender(warId: number): void {
+    if (!this.state.gameOver) playerDemandSurrender(this.state, warId);
   }
 
   /** Run exactly one fixed simulation step. */

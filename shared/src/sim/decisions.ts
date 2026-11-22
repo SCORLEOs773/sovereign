@@ -1,13 +1,23 @@
 import { createRng, mixSeed, type Rng } from "../world/random";
-import { changeRelation } from "./diplomacy";
+import { changeRelation, getRelation } from "./diplomacy";
 import { markCooldown, onCooldown, pushEvent } from "./events";
 import { clamp } from "./policy";
 import type { NationState, SimState } from "./state";
+import {
+  WAR_DECISION_OPTIONS,
+  findWarBetween,
+  joinWar,
+  playerProposePeace,
+  sideOf,
+  targetsInRange,
+  warDecisionText,
+} from "./wars";
 
 interface Ctx {
   n: NationState;
   state: SimState;
   target: number | null;
+  other: number | null;
   rng: Rng;
 }
 
@@ -23,10 +33,18 @@ export interface DecisionTemplate {
   id: string;
   title: string;
   cooldownMonths: number;
+  /** Pick a random nation as the target */
   needsTarget?: boolean;
+  /** Pick a neighbouring rival as the target */
+  needsRival?: boolean;
   /** How likely this crisis is right now (0 means it cannot happen) */
   weight: (n: NationState, state: SimState) => number;
-  describe: (n: NationState, state: SimState, target: number | null) => string;
+  describe: (
+    n: NationState,
+    state: SimState,
+    target: number | null,
+    other: number | null,
+  ) => string;
   options: OptionDef[];
 }
 
@@ -36,6 +54,14 @@ const AUTHORITARIAN = new Set([
   "Military government",
 ]);
 const pct = (ratio: number): string => `${(ratio * 100).toFixed(1)}%`;
+const nameOf = (state: SimState, id: number | null): string =>
+  id === null ? "A neighbour" : (state.nations[id]?.name ?? "A neighbour");
+
+function rivalNeighbors(state: SimState, id: number): number[] {
+  return targetsInRange(state, id).filter(
+    (t) => getRelation(state, id, t) < 15 && !findWarBetween(state, id, t),
+  );
+}
 
 interface Shock {
   approval?: number;
@@ -397,7 +423,7 @@ export const DECISION_TEMPLATES: DecisionTemplate[] = [
     needsTarget: true,
     weight: () => 0.5,
     describe: (_n, state, target) =>
-      `${target === null ? "A neighbour" : state.nations[target]!.name} has slapped tariffs on your exports.`,
+      `${nameOf(state, target)} has slapped tariffs on your exports.`,
     options: [
       {
         id: "retaliate",
@@ -528,6 +554,176 @@ export const DECISION_TEMPLATES: DecisionTemplate[] = [
       },
     ],
   },
+  {
+    id: "borderIncident",
+    title: "Border incident",
+    cooldownMonths: 12,
+    needsRival: true,
+    weight: (n, state) => (rivalNeighbors(state, n.id).length > 0 ? 0.7 : 0),
+    describe: (_n, state, target) =>
+      `${nameOf(state, target)} troops have exchanged fire with your border guards.`,
+    options: [
+      {
+        id: "protest",
+        label: "Lodge a formal protest",
+        detail: "Free. Relations dip slightly.",
+        apply: ({ n, state, target }) => {
+          if (target !== null) changeRelation(state, n.id, target, -3);
+          return "Your protest was noted, and ignored.";
+        },
+      },
+      {
+        id: "force",
+        label: "Show of force",
+        detail: "Costs 0.4% of GDP. Relations fall by 12, the public approves.",
+        apply: ({ n, state, target }) => {
+          spend(n, 0.004);
+          if (target !== null) changeRelation(state, n.id, target, -12);
+          shock(n, { approval: 3, stability: 1 });
+          return "Troops paraded along the border.";
+        },
+      },
+      {
+        id: "talks",
+        label: "Offer a joint investigation",
+        detail: "Costs 0.1% of GDP. Relations improve by 8.",
+        apply: ({ n, state, target }) => {
+          spend(n, 0.001);
+          if (target !== null) changeRelation(state, n.id, target, 8);
+          return "A joint commission calmed tempers on both sides.";
+        },
+      },
+    ],
+  },
+  {
+    id: "armsDeal",
+    title: "Arms deal offer",
+    cooldownMonths: 24,
+    weight: (n) =>
+      n.policy.spending.defence >= n.baseline.spending.defence * 0.8
+        ? 0.5
+        : 0.2,
+    describe: () =>
+      "A foreign manufacturer is offering to modernise your armed forces.",
+    options: [
+      {
+        id: "buy",
+        label: "Buy modern equipment",
+        detail: "Costs 1.2% of GDP. Equipment quality +12.",
+        apply: ({ n }) => {
+          spend(n, 0.012);
+          n.equipment = clamp(n.equipment + 12, 0, 100);
+          return "Modern equipment rolled into service.";
+        },
+      },
+      {
+        id: "domestic",
+        label: "Back domestic production",
+        detail:
+          "Costs 0.6% of GDP. Equipment +5 and a small lasting growth gain.",
+        apply: ({ n }) => {
+          spend(n, 0.006);
+          n.equipment = clamp(n.equipment + 5, 0, 100);
+          shock(n, { growthBonus: 0.0005 });
+          return "Domestic factories started building for the army.";
+        },
+      },
+      {
+        id: "decline",
+        label: "Decline",
+        detail: "No cost, no change.",
+        apply: () => "You turned the offer down.",
+      },
+    ],
+  },
+  {
+    id: "allyCall",
+    title: "Your ally calls for help",
+    cooldownMonths: 0,
+    weight: () => 0,
+    describe: (_n, state, target, other) =>
+      warDecisionText("allyCall", state, target, other),
+    options: [
+      {
+        ...WAR_DECISION_OPTIONS.allyCall[0]!,
+        apply: ({ n, state, target, other }) => {
+          if (target === null || other === null)
+            return "There was nobody to fight.";
+          const war = findWarBetween(state, target, other);
+          if (!war) return "The war was over before you could act.";
+          const side = sideOf(war, target);
+          if (!side) return "The war was over before you could act.";
+          spend(n, 0.01);
+          changeRelation(state, n.id, target, 15);
+          joinWar(state, war, n.id, side);
+          return "Your forces joined the fight.";
+        },
+      },
+      {
+        ...WAR_DECISION_OPTIONS.allyCall[1]!,
+        apply: ({ n, state, target }) => {
+          spend(n, 0.005);
+          if (target !== null) changeRelation(state, n.id, target, 8);
+          return "Supplies and funds were sent to your ally.";
+        },
+      },
+      {
+        ...WAR_DECISION_OPTIONS.allyCall[2]!,
+        apply: ({ n, state, target }) => {
+          if (target === null) return "You stayed out of it.";
+          changeRelation(state, n.id, target, -25);
+          if (getRelation(state, n.id, target) < 40) {
+            state.treaties = state.treaties.filter(
+              (t) =>
+                !(
+                  t.kind === "alliance" &&
+                  ((t.a === n.id && t.b === target) ||
+                    (t.a === target && t.b === n.id))
+                ),
+            );
+            return "You stayed out of it, and the alliance collapsed.";
+          }
+          return "You stayed out of it. Your ally was not pleased.";
+        },
+      },
+    ],
+  },
+  {
+    id: "warOnYou",
+    title: "You are under attack!",
+    cooldownMonths: 0,
+    weight: () => 0,
+    describe: (_n, state, target, other) =>
+      warDecisionText("warOnYou", state, target, other),
+    options: [
+      {
+        ...WAR_DECISION_OPTIONS.warOnYou[0]!,
+        apply: ({ n }) => {
+          spend(n, 0.005);
+          shock(n, { approval: 5, stability: 3 });
+          n.army *= 1.03;
+          return "The nation rallied behind you.";
+        },
+      },
+      {
+        ...WAR_DECISION_OPTIONS.warOnYou[1]!,
+        apply: ({ n }) => {
+          spend(n, 0.015);
+          n.army *= 1.12;
+          return "Reserves were called up and the army swelled.";
+        },
+      },
+      {
+        ...WAR_DECISION_OPTIONS.warOnYou[2]!,
+        apply: ({ n, state, target }) => {
+          if (target === null) return "There was nobody to talk to.";
+          const war = findWarBetween(state, n.id, target);
+          if (!war) return "There is no war to end.";
+          return playerProposePeace(state, war.id).message;
+        },
+      },
+    ],
+  },
 ];
 
 /** Put a specific decision in front of the player. */
@@ -535,22 +731,30 @@ export function triggerDecision(
   state: SimState,
   templateId: string,
   rng: Rng,
+  opts: { target?: number | null; other?: number | null } = {},
 ): boolean {
   const template = DECISION_TEMPLATES.find((t) => t.id === templateId);
   if (!template) return false;
   const player = state.nations[state.playerCountryId]!;
 
-  let target: number | null = null;
-  if (template.needsTarget) {
+  let target: number | null = opts.target ?? null;
+  const other: number | null = opts.other ?? null;
+
+  if (target === null && template.needsTarget) {
     const others = state.nations.filter((n) => n.id !== player.id);
     target = others[rng.int(others.length)]!.id;
+  }
+  if (target === null && template.needsRival) {
+    const rivals = rivalNeighbors(state, player.id);
+    target = rivals.length > 0 ? rivals[rng.int(rivals.length)]! : null;
   }
 
   state.pendingDecision = {
     templateId,
     title: template.title,
-    text: template.describe(player, state, target),
+    text: template.describe(player, state, target, other),
     target,
+    other,
     options: template.options.map((o) => ({
       id: o.id,
       label: o.label,
@@ -610,6 +814,7 @@ export function resolveDecision(state: SimState, optionId: string): boolean {
     n: player,
     state,
     target: pending.target,
+    other: pending.other,
     rng,
   });
   pushEvent(state, "info", `${template.title}: ${outcome}`);

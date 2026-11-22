@@ -17,7 +17,7 @@ export function GameScreen() {
 
   return (
     <div className="app">
-      <GameTopBar nation={nation} />
+      <GameTopBar nation={nation} state={state} />
       <div className="workspace">
         <WorldMap showModes />
         <GamePanel state={state} nation={nation} />

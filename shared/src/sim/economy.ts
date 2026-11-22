@@ -7,6 +7,13 @@ export const PROFIT_SHARE = 0.25;
 export const OTHER_REVENUE = 0.1;
 export const ADMIN_SPENDING = 0.03;
 
+/** Citizens of these systems tolerate war better. */
+const WAR_RESISTANT = new Set([
+  "Absolute monarchy",
+  "One-party state",
+  "Military government",
+]);
+
 export interface Budget {
   income: number;
   corporate: number;
@@ -15,6 +22,7 @@ export interface Budget {
   programmes: number;
   administration: number;
   interest: number;
+  war: number;
   spending: number;
   balance: number;
 }
@@ -47,7 +55,8 @@ export function computeBudget(n: NationState): Budget {
   for (const key of SPENDING_KEYS) programmes += n.gdp * p.spending[key];
   const administration = n.gdp * ADMIN_SPENDING;
   const interest = n.debt * debtInterestRate(n);
-  const spending = programmes + administration + interest;
+  const war = n.gdp * n.warCostRate;
+  const spending = programmes + administration + interest + war;
 
   return {
     income,
@@ -57,6 +66,7 @@ export function computeBudget(n: NationState): Budget {
     programmes,
     administration,
     interest,
+    war,
     spending,
     balance: revenue - spending,
   };
@@ -87,7 +97,8 @@ export function growthTarget(n: NationState, noise: number): number {
     0.02 * Math.max(0, debtRatio - 1) +
     n.growthBonus +
     n.tradeBonus -
-    n.sanctionPenalty +
+    n.sanctionPenalty -
+    n.warPenalty +
     noise;
 
   return clamp(g, -0.12, 0.1);
@@ -97,6 +108,7 @@ export function approvalTarget(n: NationState): number {
   const p = n.policy;
   const b = n.baseline;
   const debtRatio = n.debt / n.gdp;
+  const warFactor = WAR_RESISTANT.has(n.governmentType) ? 0.5 : 1;
 
   return (
     n.approvalBias +
@@ -109,7 +121,8 @@ export function approvalTarget(n: NationState): number {
     200 * delta(p.spending.education, b.spending.education, 0.05) +
     250 * delta(p.spending.welfare, b.spending.welfare, 0.05) +
     120 * delta(p.spending.infrastructure, b.spending.infrastructure, 0.05) -
-    10 * Math.max(0, debtRatio - 1.2)
+    10 * Math.max(0, debtRatio - 1.2) -
+    0.3 * n.warWeariness * warFactor
   );
 }
 
@@ -119,7 +132,8 @@ export function stabilityTarget(n: NationState): number {
     0.5 * (n.approval - n.baseApproval) -
     1.2 * Math.max(0, 35 - n.approval) -
     150 * Math.max(0, n.inflation - 0.1) -
-    120 * Math.max(0, n.unemployment - 0.15)
+    120 * Math.max(0, n.unemployment - 0.15) -
+    0.15 * n.warWeariness
   );
 }
 
@@ -138,6 +152,9 @@ function sanitize(n: NationState): void {
   n.growth = clamp(finiteOr(n.growth, 0), -0.2, 0.15);
   n.approval = clamp(finiteOr(n.approval, 50), 0, 100);
   n.stability = clamp(finiteOr(n.stability, 50), 0, 100);
+  n.army = Math.max(1000, finiteOr(n.army, 1000));
+  n.equipment = clamp(finiteOr(n.equipment, 50), 0, 100);
+  n.warWeariness = clamp(finiteOr(n.warWeariness, 0), 0, 100);
 }
 
 /** Advance one nation's economy by one month. */

@@ -20,6 +20,10 @@ const COPY: Record<GameOver["reason"], { title: string; text: string }> = {
     title: "Your term ends",
     text: "After twenty years you leave office. History will judge your legacy.",
   },
+  conquest: {
+    title: "Your country has fallen",
+    text: "Enemy armies overran the nation. Your government is no more.",
+  },
 };
 
 export function GameOverModal({

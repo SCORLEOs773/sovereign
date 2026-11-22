@@ -1,0 +1,107 @@
+/* ---------- War badge ---------- */
+.war-badge {
+  padding: 4px 10px;
+  background: rgba(217, 83, 79, 0.18);
+  border: 1px solid var(--bad);
+  border-radius: 6px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--bad);
+  animation: war-pulse 1.6s ease-in-out infinite;
+}
+
+@keyframes war-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.55;
+  }
+}
+
+.legend-bar.military {
+  background: linear-gradient(90deg, #23314d, #e0645c);
+}
+
+/* ---------- Military tab ---------- */
+.war-card {
+  padding: 10px 12px;
+  margin-bottom: 10px;
+  background: var(--panel-2);
+  border: 1px solid var(--bad);
+  border-radius: 8px;
+  font-size: 0.85rem;
+}
+
+.war-card.foreign {
+  border-color: var(--border);
+}
+
+.war-title {
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+
+.tug {
+  height: 10px;
+  margin: 8px 0 4px;
+  background: #5c2a2a;
+  border-radius: 5px;
+  overflow: hidden;
+}
+
+.tug-fill {
+  height: 100%;
+  background: var(--accent);
+  transition: width 0.4s ease;
+}
+
+.tug-labels {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.7rem;
+  color: var(--text-muted);
+}
+
+.power-list {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.power-row {
+  display: grid;
+  grid-template-columns: 110px 1fr 56px;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.78rem;
+  cursor: pointer;
+}
+
+.power-row.me .power-name {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.power-bar {
+  height: 8px;
+  background: var(--panel-2);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.power-fill {
+  height: 100%;
+  background: #e0645c;
+}
+
+.power-row.me .power-fill {
+  background: var(--accent);
+}
+
+.power-val {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}

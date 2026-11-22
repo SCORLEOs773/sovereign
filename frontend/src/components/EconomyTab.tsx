@@ -144,6 +144,9 @@ export function EconomyTab({
           amount={budget.interest}
           gdp={nation.gdp}
         />
+        {budget.war > 0 && (
+          <BudgetRow label="War costs" amount={budget.war} gdp={nation.gdp} />
+        )}
         <BudgetRow
           label="Total spending"
           amount={budget.spending}

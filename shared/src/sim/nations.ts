@@ -8,6 +8,7 @@ import {
   growthTarget,
   stabilityTarget,
 } from "./economy";
+import { equipmentTarget } from "./military";
 import {
   SPENDING_KEYS,
   clamp,
@@ -95,6 +96,8 @@ export function createNation(country: Country, seed: number): NationState {
     name: country.name,
     region: country.region,
     governmentType: country.governmentType,
+    x: country.capital.x,
+    y: country.capital.y,
     population: country.population,
     gdp: country.gdp,
     treasury: country.gdp * 0.03,
@@ -116,6 +119,12 @@ export function createNation(country: Country, seed: number): NationState {
     growthBonus: 0,
     tradeBonus: 0,
     sanctionPenalty: 0,
+    army: country.armyPersonnel,
+    equipment: 50,
+    armyRate: country.armyPersonnel / country.population,
+    warWeariness: 0,
+    warCostRate: 0,
+    warPenalty: 0,
     policy,
     baseline: clonePolicy(policy),
     personality: {
@@ -151,6 +160,9 @@ export function createNation(country: Country, seed: number): NationState {
   for (const key of SPENDING_KEYS)
     spending[key] = (programmes * weights[key]) / totalWeight;
   nation.baseline = clonePolicy(policy);
+
+  // Equipment starts in balance with the starting defence budget
+  nation.equipment = equipmentTarget(nation);
 
   // Starting growth is the neutral reference for later changes
   nation.growth = growthTarget(nation, 0);

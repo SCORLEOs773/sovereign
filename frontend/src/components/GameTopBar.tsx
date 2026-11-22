@@ -1,4 +1,4 @@
-import { GAME_NAME, type NationState } from "@sovereign/shared";
+import { GAME_NAME, type NationState, type SimState } from "@sovereign/shared";
 import { formatCompact, formatMoney, formatPercent } from "../format";
 import { backToMenu } from "../sim/simClient";
 import { useGameStore } from "../store/gameStore";
@@ -24,9 +24,18 @@ function Chip({
 const tone = (value: number, good: number, bad: number): string =>
   value >= good ? "ok" : value < bad ? "bad" : "";
 
-export function GameTopBar({ nation }: { nation: NationState }) {
+export function GameTopBar({
+  nation,
+  state,
+}: {
+  nation: NationState;
+  state: SimState;
+}) {
   const name = useGameStore(
     (s) => s.world.countries.find((c) => c.id === nation.id)?.name ?? "",
+  );
+  const atWar = state.wars.some(
+    (w) => w.attackers.includes(nation.id) || w.defenders.includes(nation.id),
   );
 
   return (
@@ -35,6 +44,7 @@ export function GameTopBar({ nation }: { nation: NationState }) {
         <span className="brand-title">{GAME_NAME}</span>
         <span className="player-name">{name}</span>
       </div>
+      {atWar && <span className="war-badge">⚔ AT WAR</span>}
       <div className="spacer" />
       <ClockControls />
       <div className="spacer" />

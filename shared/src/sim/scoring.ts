@@ -93,6 +93,14 @@ export function getObjectives(state: SimState): Objective[] {
       status: `${p.approval.toFixed(0)}%`,
       done: p.approval >= 65,
     },
+    {
+      id: "war",
+      title: "Victorious",
+      description: "Win a war, as attacker or defender.",
+      progress: state.warsWon >= 1 ? 1 : 0,
+      status: `${state.warsWon} / 1`,
+      done: state.warsWon >= 1,
+    },
   ];
 }
 
@@ -108,6 +116,7 @@ export function computeScore(state: SimState): number {
     25 * countTreaties(state, p.id, "trade") +
     40 * countTreaties(state, p.id, "alliance") +
     100 * state.electionsWon +
+    60 * state.warsWon +
     10 * years +
     50 * completed;
   return Math.round(score);

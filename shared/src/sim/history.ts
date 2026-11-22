@@ -1,3 +1,4 @@
+import { militaryPower } from "./military";
 import type { NationState, SimState } from "./state";
 
 const MAX_POINTS = 120;
@@ -13,6 +14,7 @@ export function recordHistory(state: SimState, nation: NationState): void {
   h.unemployment.push(nation.unemployment);
   h.treasury.push(nation.treasury);
   h.debt.push(nation.debt);
+  h.power.push(militaryPower(nation));
 
   for (const series of [
     h.ticks,
@@ -23,6 +25,7 @@ export function recordHistory(state: SimState, nation: NationState): void {
     h.unemployment,
     h.treasury,
     h.debt,
+    h.power,
   ]) {
     if (series.length > MAX_POINTS)
       series.splice(0, series.length - MAX_POINTS);

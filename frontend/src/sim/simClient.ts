@@ -143,3 +143,15 @@ export function setSanctions(target: number, active: boolean): void {
 export function respondProposal(proposalId: number, accept: boolean): void {
   send({ type: "respondProposal", proposalId, accept });
 }
+
+export function declareWar(target: number): void {
+  send({ type: "declareWar", target });
+}
+
+export function proposePeace(warId: number): void {
+  send({ type: "proposePeace", warId });
+}
+
+export function demandSurrender(warId: number): void {
+  send({ type: "demandSurrender", warId });
+}

@@ -1,7 +1,7 @@
 import { create } from "zustand";
 
 export type Screen = "menu" | "setup" | "game";
-export type MapMode = "political" | "relations" | "economy";
+export type MapMode = "political" | "relations" | "economy" | "military";
 
 interface UiState {
   screen: Screen;

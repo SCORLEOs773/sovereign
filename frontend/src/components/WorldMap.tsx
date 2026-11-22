@@ -1,6 +1,11 @@
 import { useCallback, useEffect, useRef } from "react";
 import { createMapController, type MapController } from "../map/mapController";
 import { computeMapColors, mapColorKey } from "../map/mapColors";
+import {
+  computeArmyCircles,
+  computeWarOverlay,
+  warOverlayKey,
+} from "../map/warOverlay";
 import { useGameStore } from "../store/gameStore";
 import { useSimStore } from "../store/simStore";
 import { useUiStore, type MapMode } from "../store/uiStore";
@@ -9,6 +14,7 @@ const MODES: { id: MapMode; label: string }[] = [
   { id: "political", label: "Political" },
   { id: "relations", label: "Relations" },
   { id: "economy", label: "Economy" },
+  { id: "military", label: "Military" },
 ];
 
 export function WorldMap({ showModes = false }: { showModes?: boolean }) {
@@ -25,12 +31,30 @@ export function WorldMap({ showModes = false }: { showModes?: boolean }) {
   const setMode = useUiStore((s) => s.setMapMode);
   const effectiveMode: MapMode = showModes ? mode : "political";
   const colorKey = useSimStore((s) => mapColorKey(effectiveMode, s.state));
+  const warKey = useSimStore((s) =>
+    showModes ? warOverlayKey(s.state) : "none",
+  );
+  const armyKey = useSimStore((s) =>
+    effectiveMode === "military" ? `m:${s.state?.months ?? 0}` : "off",
+  );
 
   const applyColors = useCallback((): void => {
     controllerRef.current?.setColors(
       computeMapColors(effectiveMode, world, useSimStore.getState().state),
     );
   }, [effectiveMode, world]);
+
+  const applyOverlays = useCallback((): void => {
+    const controller = controllerRef.current;
+    if (!controller) return;
+    const state = useSimStore.getState().state;
+    controller.setWarOverlay(
+      computeWarOverlay(world, showModes ? state : null),
+    );
+    controller.setArmyCircles(
+      effectiveMode === "military" ? computeArmyCircles(state) : [],
+    );
+  }, [effectiveMode, showModes, world]);
 
   useEffect(() => {
     const host = hostRef.current;
@@ -45,6 +69,7 @@ export function WorldMap({ showModes = false }: { showModes?: boolean }) {
         }
         controllerRef.current = controller;
         applyColors();
+        applyOverlays();
       })
       .catch((err: unknown) => console.error("Failed to start the map", err));
 
@@ -53,13 +78,17 @@ export function WorldMap({ showModes = false }: { showModes?: boolean }) {
       controllerRef.current?.destroy();
       controllerRef.current = null;
     };
-    // The map is rebuilt only when the world changes. Colours are updated separately below.
+    // The map is rebuilt only when the world changes. Colours and overlays update separately below.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [world]);
 
   useEffect(() => {
     applyColors();
   }, [applyColors, colorKey]);
+
+  useEffect(() => {
+    applyOverlays();
+  }, [applyOverlays, warKey, armyKey]);
 
   return (
     <section className="map-area">
@@ -97,6 +126,16 @@ export function WorldMap({ showModes = false }: { showModes?: boolean }) {
           <div className="legend-ends">
             <span>Poorer</span>
             <span>Richer</span>
+          </div>
+        </div>
+      )}
+      {showModes && mode === "military" && (
+        <div className="map-legend">
+          <div>Military power (circles show army size)</div>
+          <div className="legend-bar military" />
+          <div className="legend-ends">
+            <span>Weaker</span>
+            <span>Stronger</span>
           </div>
         </div>
       )}

@@ -1,4 +1,4 @@
-import type { SimState, World } from "@sovereign/shared";
+import { militaryPower, type SimState, type World } from "@sovereign/shared";
 import type { MapMode } from "../store/uiStore";
 
 function mix(a: number, b: number, t: number): number {
@@ -25,7 +25,7 @@ export function mapColorKey(mode: MapMode, state: SimState | null): string {
     const row = state.relations[state.playerCountryId] ?? [];
     return `r:${state.playerCountryId}:${row.map((v) => Math.round(v / 5)).join(",")}`;
   }
-  return `e:${state.months}`;
+  return `${mode}:${state.months}`;
 }
 
 export function computeMapColors(
@@ -47,11 +47,16 @@ export function computeMapColors(
           : relationColor(row[c.id] ?? 0),
       );
     }
-  } else {
+  } else if (mode === "economy") {
     for (const n of state.nations) {
       const perCapita = n.gdp / n.population;
       const t = (Math.log10(Math.max(1000, perCapita)) - 3.3) / 1.7;
       colors.set(n.id, mix(0x1d3a5c, 0x3fd0c0, t));
+    }
+  } else {
+    for (const n of state.nations) {
+      const t = (Math.log10(Math.max(1000, militaryPower(n))) - 4.2) / 2.8;
+      colors.set(n.id, mix(0x23314d, 0xe0645c, t));
     }
   }
   return colors;

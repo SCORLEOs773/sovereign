@@ -54,91 +54,87 @@ scope.onmessage = (event) => {
   }
   const command = parsed.data;
 
-  switch (command.type) {
-    case "init": {
-      let initial: SimState;
-      if (command.snapshot) {
-        initial = command.snapshot.state;
-      } else if (command.playerCountryId !== null) {
-        initial = createInitialSimState(
-          command.worldSeed,
-          command.playerCountryId,
-        );
-      } else {
-        console.error("init needs either a snapshot or a player country");
-        return;
-      }
-
-      if (timer !== null) clearInterval(timer);
-      engine = new SimulationEngine(initial);
-      let offline = {
-        ticks: 0,
-        capped: false,
-        elapsedSeconds: command.offlineSeconds,
-      };
-
-      if (command.snapshot) {
-        engine.setSpeed(command.snapshot.speed);
-        const progress = computeOfflineTicks(
-          command.offlineSeconds,
-          command.snapshot.speed,
-        );
-        engine.fastForward(progress.ticks);
-        offline = { ...progress, elapsedSeconds: command.offlineSeconds };
-      }
-
-      scope.postMessage({
-        type: "ready",
-        worldSeed: command.worldSeed,
-        speed: engine.getSpeed(),
-        state: engine.getState(),
-        offline,
-      });
-
-      lastTime = performance.now();
-      lastPost = lastTime;
-      timer = setInterval(loop, LOOP_INTERVAL_MS);
-      break;
+  if (command.type === "init") {
+    let initial: SimState;
+    if (command.snapshot) {
+      initial = command.snapshot.state;
+    } else if (command.playerCountryId !== null) {
+      initial = createInitialSimState(
+        command.worldSeed,
+        command.playerCountryId,
+      );
+    } else {
+      console.error("init needs either a snapshot or a player country");
+      return;
     }
+
+    if (timer !== null) clearInterval(timer);
+    engine = new SimulationEngine(initial);
+    let offline = {
+      ticks: 0,
+      capped: false,
+      elapsedSeconds: command.offlineSeconds,
+    };
+
+    if (command.snapshot) {
+      engine.setSpeed(command.snapshot.speed);
+      const progress = computeOfflineTicks(
+        command.offlineSeconds,
+        command.snapshot.speed,
+      );
+      engine.fastForward(progress.ticks);
+      offline = { ...progress, elapsedSeconds: command.offlineSeconds };
+    }
+
+    scope.postMessage({
+      type: "ready",
+      worldSeed: command.worldSeed,
+      speed: engine.getSpeed(),
+      state: engine.getState(),
+      offline,
+    });
+
+    lastTime = performance.now();
+    lastPost = lastTime;
+    timer = setInterval(loop, LOOP_INTERVAL_MS);
+    return;
+  }
+
+  if (!engine) return;
+  switch (command.type) {
     case "setSpeed":
-      if (!engine) return;
       engine.setSpeed(command.speed);
-      postState(true);
       break;
     case "setPolicy":
-      if (!engine) return;
       engine.applyPolicy(command.policy);
-      postState(true);
       break;
     case "resolveDecision":
-      if (!engine) return;
       engine.resolveDecision(command.optionId);
-      postState(true);
       break;
     case "improveRelations":
-      if (!engine) return;
       engine.improveRelations(command.target);
-      postState(true);
       break;
     case "proposeTreaty":
-      if (!engine) return;
       engine.proposeTreaty(command.target, command.kind);
-      postState(true);
       break;
     case "cancelTreaty":
-      if (!engine) return;
       engine.cancelTreaty(command.treatyId);
-      postState(true);
       break;
     case "setSanctions":
-      if (!engine) return;
       engine.setSanctions(command.target, command.active);
-      postState(true);
       break;
     case "respondProposal":
-      if (!engine) return;
       engine.respondProposal(command.proposalId, command.accept);
-      postState(true);
+      break;
+    case "declareWar":
+      engine.declareWar(command.target);
+      break;
+    case "proposePeace":
+      engine.proposePeace(command.warId);
+      break;
+    case "demandSurrender":
+      engine.demandSurrender(command.warId);
       break;
   }
+  postState(true);
 };

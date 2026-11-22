@@ -36,6 +36,9 @@ export const SimCommandSchema = z.discriminatedUnion("type", [
     proposalId: z.number().int(),
     accept: z.boolean(),
   }),
+  z.object({ type: z.literal("declareWar"), target: z.number().int().min(0) }),
+  z.object({ type: z.literal("proposePeace"), warId: z.number().int() }),
+  z.object({ type: z.literal("demandSurrender"), warId: z.number().int() }),
 ]);
 export type SimCommand = z.infer<typeof SimCommandSchema>;
 

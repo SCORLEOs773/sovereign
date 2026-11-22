@@ -5,8 +5,10 @@ import { refreshDiplomacyEffects, runDiplomacy } from "./diplomacy";
 import { stepEconomy } from "./economy";
 import { pushEvent, raiseAlert } from "./events";
 import { recordHistory } from "./history";
+import { stepMilitary } from "./military";
 import type { SimState } from "./state";
 import { SIM_CONFIG, isElectionYear, tickToDate } from "./time";
+import { isAtWar, refreshWarEffects, runWarsMonthly } from "./wars";
 
 const money = new Intl.NumberFormat("en", {
   notation: "compact",
@@ -126,24 +128,39 @@ function checkPlayerAlerts(state: SimState): void {
       "The treasury is empty and the state is borrowing to pay its bills.",
     );
   }
+  if (n.warWeariness > 50) {
+    raiseAlert(
+      state,
+      "weariness",
+      12,
+      "warning",
+      "War weariness is eroding public support.",
+    );
+  }
 }
 
 /** Everything that happens on the first day of each month. */
 export function runMonthly(state: SimState): void {
   const date = tickToDate(state.tick);
 
-  // 1. Trade deals and sanctions feed into growth
+  // 1. Trade deals, sanctions and war feed into growth
   refreshDiplomacyEffects(state);
+  refreshWarEffects(state);
 
-  // 2. Every nation's economy
+  // 2. Every nation's economy and armed forces
   for (const nation of state.nations) {
     stepEconomy(nation, createRng(mixSeed(state.seed, state.tick, nation.id)));
+    stepMilitary(nation, isAtWar(state, nation.id));
   }
 
   // 3. Relations, treaties, offers and sanctions
   runDiplomacy(state);
 
-  // 4. AI governments adjust policy (the player is never touched)
+  // 4. Fighting, AI aggression and conquest
+  runWarsMonthly(state);
+  if (state.gameOver) return;
+
+  // 5. AI governments adjust policy (the player is never touched)
   for (const nation of state.nations) {
     if (nation.id === state.playerCountryId) continue;
     runAiPolicy(
@@ -156,7 +173,7 @@ export function runMonthly(state: SimState): void {
   recordHistory(state, player);
   checkPlayerAlerts(state);
 
-  // 5. Collapse check
+  // 6. Collapse check
   if (player.stability < 10) player.lowStabilityMonths += 1;
   else player.lowStabilityMonths = 0;
   if (player.lowStabilityMonths >= 3 && !state.gameOver) {
@@ -169,7 +186,7 @@ export function runMonthly(state: SimState): void {
     return;
   }
 
-  // 6. January: the end of the campaign, the annual report and elections
+  // 7. January: the end of the campaign, the annual report and elections
   if (date.getUTCMonth() === 0) {
     const year = date.getUTCFullYear();
     if (year >= SIM_CONFIG.campaignEndYear) {
@@ -192,6 +209,6 @@ export function runMonthly(state: SimState): void {
       holdElection(state);
   }
 
-  // 7. Perhaps a crisis lands on the player's desk
+  // 8. Perhaps a crisis lands on the player's desk
   maybeTriggerDecision(state);
 }

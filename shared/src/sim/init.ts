@@ -15,6 +15,16 @@ export function createInitialSimState(
   const player = nations[playerCountryId];
   if (!player) throw new Error(`Unknown country id ${playerCountryId}`);
 
+  // Which nations share a land border
+  const adjacency: number[][] = world.countries.map(() => []);
+  for (const segment of world.segments) {
+    if (segment.b < 0) continue;
+    if (!adjacency[segment.a]!.includes(segment.b))
+      adjacency[segment.a]!.push(segment.b);
+    if (!adjacency[segment.b]!.includes(segment.a))
+      adjacency[segment.b]!.push(segment.a);
+  }
+
   const state: SimState = {
     tick: 0,
     hours: 0,
@@ -35,6 +45,10 @@ export function createInitialSimState(
     nextId: 1,
     electionsWon: 0,
     startGdp: player.gdp,
+    adjacency,
+    wars: [],
+    truces: [],
+    warsWon: 0,
   };
 
   pushEvent(
