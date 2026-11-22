@@ -12,6 +12,8 @@ const OCEAN_WORLD = 0x12304f;
 export interface MapController {
   zoomBy: (factor: number) => void;
   resetView: () => void;
+  /** Recolour countries, for example for the relations or economy map modes */
+  setColors: (colors: Map<number, number>) => void;
   destroy: () => void;
 }
 
@@ -51,6 +53,10 @@ export async function createMapController(
   const countryById = new Map<number, Country>(
     world.countries.map((c) => [c.id, c] as [number, Country]),
   );
+  const colors = new Map<number, number>(
+    world.countries.map((c) => [c.id, c.color] as [number, number]),
+  );
+  const colorOf = (id: number): number => colors.get(id) ?? 0x888888;
 
   // ---------- Scene ----------
   const viewport = new Container();
@@ -63,16 +69,19 @@ export async function createMapController(
   const land = new Graphics();
   const polysByCountry = new Map<number, number[][]>();
   for (const cell of world.cells) {
-    const country = countryById.get(cell.countryId);
-    if (!country) continue;
-    land
-      .poly(cell.polygon)
-      .fill({ color: country.color })
-      .stroke({ width: 0.8, color: country.color });
     const list = polysByCountry.get(cell.countryId);
     if (list) list.push(cell.polygon);
     else polysByCountry.set(cell.countryId, [cell.polygon]);
   }
+
+  const drawLand = (): void => {
+    land.clear();
+    for (const cell of world.cells) {
+      const color = colorOf(cell.countryId);
+      land.poly(cell.polygon).fill({ color }).stroke({ width: 0.8, color });
+    }
+  };
+  drawLand();
 
   const hoverFill = new Graphics();
   const selectFill = new Graphics();
@@ -92,7 +101,7 @@ export async function createMapController(
   const labels: Text[] = [];
   const markerLayer = new Container();
   const labelLayer = new Container();
-  for (const country of world.countries) {
+  for (const country of countryById.values()) {
     const marker = new Graphics()
       .circle(0, 0, 3.5)
       .fill(0xffffff)
@@ -132,9 +141,7 @@ export async function createMapController(
 
   // ---------- Highlights ----------
   const fillCountry = (g: Graphics, id: number, amount: number): void => {
-    const country = countryById.get(id);
-    if (!country) return;
-    const color = lighten(country.color, amount);
+    const color = lighten(colorOf(id), amount);
     for (const poly of polysByCountry.get(id) ?? []) {
       g.poly(poly).fill({ color }).stroke({ width: 0.8, color });
     }
@@ -343,6 +350,12 @@ export async function createMapController(
     resetView: () => {
       userMoved = false;
       fit();
+    },
+    setColors: (next) => {
+      colors.clear();
+      for (const [id, color] of next) colors.set(id, color);
+      drawLand();
+      redrawHighlights();
     },
     destroy: () => {
       observer.disconnect();

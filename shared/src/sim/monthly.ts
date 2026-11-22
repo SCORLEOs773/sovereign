@@ -1,10 +1,12 @@
 import { createRng, mixSeed } from "../world/random";
 import { runAiPolicy } from "./ai";
+import { maybeTriggerDecision } from "./decisions";
+import { refreshDiplomacyEffects, runDiplomacy } from "./diplomacy";
 import { stepEconomy } from "./economy";
 import { pushEvent, raiseAlert } from "./events";
 import { recordHistory } from "./history";
 import type { SimState } from "./state";
-import { isElectionYear, tickToDate } from "./time";
+import { SIM_CONFIG, isElectionYear, tickToDate } from "./time";
 
 const money = new Intl.NumberFormat("en", {
   notation: "compact",
@@ -31,6 +33,7 @@ export function holdElection(state: SimState): boolean {
   const approval = Math.round(player.approval);
 
   if (won) {
+    state.electionsWon += 1;
     pushEvent(
       state,
       "good",
@@ -129,12 +132,18 @@ function checkPlayerAlerts(state: SimState): void {
 export function runMonthly(state: SimState): void {
   const date = tickToDate(state.tick);
 
-  // 1. Every nation's economy
+  // 1. Trade deals and sanctions feed into growth
+  refreshDiplomacyEffects(state);
+
+  // 2. Every nation's economy
   for (const nation of state.nations) {
     stepEconomy(nation, createRng(mixSeed(state.seed, state.tick, nation.id)));
   }
 
-  // 2. AI governments adjust policy (the player is never touched)
+  // 3. Relations, treaties, offers and sanctions
+  runDiplomacy(state);
+
+  // 4. AI governments adjust policy (the player is never touched)
   for (const nation of state.nations) {
     if (nation.id === state.playerCountryId) continue;
     runAiPolicy(
@@ -147,7 +156,7 @@ export function runMonthly(state: SimState): void {
   recordHistory(state, player);
   checkPlayerAlerts(state);
 
-  // 3. Collapse check
+  // 5. Collapse check
   if (player.stability < 10) player.lowStabilityMonths += 1;
   else player.lowStabilityMonths = 0;
   if (player.lowStabilityMonths >= 3 && !state.gameOver) {
@@ -160,9 +169,18 @@ export function runMonthly(state: SimState): void {
     return;
   }
 
-  // 4. January: annual report and elections
+  // 6. January: the end of the campaign, the annual report and elections
   if (date.getUTCMonth() === 0) {
     const year = date.getUTCFullYear();
+    if (year >= SIM_CONFIG.campaignEndYear) {
+      pushEvent(
+        state,
+        "good",
+        `Your time in office ends after ${year - SIM_CONFIG.startYear} years.`,
+      );
+      state.gameOver = { reason: "retirement", tick: state.tick };
+      return;
+    }
     pushEvent(
       state,
       "info",
@@ -173,4 +191,7 @@ export function runMonthly(state: SimState): void {
     if (isElectionYear(year) && hasElections(player.governmentType))
       holdElection(state);
   }
+
+  // 7. Perhaps a crisis lands on the player's desk
+  maybeTriggerDecision(state);
 }

@@ -9,6 +9,7 @@ import {
   createInitialSimState,
   formatGameDateTime,
 } from "./index";
+import { runTicks } from "./testUtils";
 
 const newEngine = (): SimulationEngine =>
   new SimulationEngine(createInitialSimState(DEFAULT_WORLD_SEED, 0));
@@ -72,15 +73,15 @@ describe("SimulationEngine", () => {
 
   it("counts hours, days and months from the calendar", () => {
     const day = newEngine();
-    day.fastForward(TICKS_PER_DAY);
+    runTicks(day, TICKS_PER_DAY);
     expect(day.getState()).toMatchObject({ hours: 24, days: 1, months: 0 });
 
     const feb = newEngine();
-    feb.fastForward(31 * TICKS_PER_DAY);
+    runTicks(feb, 31 * TICKS_PER_DAY);
     expect(feb.getState().months).toBe(1);
 
     const mar = newEngine();
-    mar.fastForward(60 * TICKS_PER_DAY); // 2032 is a leap year
+    runTicks(mar, 60 * TICKS_PER_DAY); // 2032 is a leap year
     expect(mar.getState().months).toBe(2);
   });
 });
@@ -122,7 +123,7 @@ describe("formatGameDateTime", () => {
 
 describe("SimSnapshotSchema", () => {
   const valid = {
-    version: 2,
+    version: 3,
     worldSeed: DEFAULT_WORLD_SEED,
     speed: 2,
     state: createInitialSimState(DEFAULT_WORLD_SEED, 3),
@@ -140,7 +141,7 @@ describe("SimSnapshotSchema", () => {
   });
 
   it("rejects an old snapshot version", () => {
-    expect(SimSnapshotSchema.safeParse({ ...valid, version: 1 }).success).toBe(
+    expect(SimSnapshotSchema.safeParse({ ...valid, version: 2 }).success).toBe(
       false,
     );
   });

@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { PolicyPatchSchema } from "./policy";
 import { SimSpeedSchema, type SimSpeed } from "./speed";
-import { SimSnapshotSchema, type SimState } from "./state";
+import { SimSnapshotSchema, TreatyKindSchema, type SimState } from "./state";
 
 /** Commands the UI sends to the simulation. Always validated before use. */
 export const SimCommandSchema = z.discriminatedUnion("type", [
@@ -13,13 +13,28 @@ export const SimCommandSchema = z.discriminatedUnion("type", [
     snapshot: SimSnapshotSchema.nullable(),
     offlineSeconds: z.number().min(0),
   }),
+  z.object({ type: z.literal("setSpeed"), speed: SimSpeedSchema }),
+  z.object({ type: z.literal("setPolicy"), policy: PolicyPatchSchema }),
+  z.object({ type: z.literal("resolveDecision"), optionId: z.string() }),
   z.object({
-    type: z.literal("setSpeed"),
-    speed: SimSpeedSchema,
+    type: z.literal("improveRelations"),
+    target: z.number().int().min(0),
   }),
   z.object({
-    type: z.literal("setPolicy"),
-    policy: PolicyPatchSchema,
+    type: z.literal("proposeTreaty"),
+    target: z.number().int().min(0),
+    kind: TreatyKindSchema,
+  }),
+  z.object({ type: z.literal("cancelTreaty"), treatyId: z.number().int() }),
+  z.object({
+    type: z.literal("setSanctions"),
+    target: z.number().int().min(0),
+    active: z.boolean(),
+  }),
+  z.object({
+    type: z.literal("respondProposal"),
+    proposalId: z.number().int(),
+    accept: z.boolean(),
   }),
 ]);
 export type SimCommand = z.infer<typeof SimCommandSchema>;

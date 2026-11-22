@@ -1,0 +1,241 @@
+/* ---------- Map modes and legend ---------- */
+.map-modes {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  display: flex;
+  gap: 4px;
+}
+
+.mode {
+  padding: 6px 10px;
+  background: rgba(16, 26, 46, 0.9);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-size: 0.78rem;
+  cursor: pointer;
+}
+
+.mode:hover {
+  border-color: var(--accent);
+}
+
+.mode.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+.map-legend {
+  position: absolute;
+  right: 12px;
+  bottom: 12px;
+  padding: 8px 10px;
+  background: rgba(16, 26, 46, 0.9);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-size: 0.72rem;
+  width: 190px;
+  pointer-events: none;
+}
+
+.legend-bar {
+  height: 8px;
+  border-radius: 4px;
+  margin: 6px 0 4px;
+}
+
+.legend-bar.relations {
+  background: linear-gradient(90deg, #d9534f, #7a7f8a, #3ddc97);
+}
+
+.legend-bar.economy {
+  background: linear-gradient(90deg, #1d3a5c, #3fd0c0);
+}
+
+.legend-ends {
+  display: flex;
+  justify-content: space-between;
+  color: var(--text-muted);
+}
+
+/* ---------- Toast ---------- */
+.toast {
+  position: fixed;
+  left: 50%;
+  bottom: 36px;
+  transform: translateX(-50%);
+  z-index: 920;
+  max-width: min(560px, 90vw);
+  padding: 10px 16px;
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--accent);
+  border-radius: 8px;
+  font-size: 0.85rem;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+}
+
+.toast.good {
+  border-left-color: var(--ok);
+}
+
+.toast.warning {
+  border-left-color: #e3b341;
+}
+
+.toast.crisis {
+  border-left-color: var(--bad);
+}
+
+/* ---------- Decision modal ---------- */
+.modal.decision {
+  width: min(520px, 92vw);
+  text-align: left;
+}
+
+.kicker {
+  font-size: 0.7rem;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 6px;
+}
+
+.options {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.option {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 10px 12px;
+  text-align: left;
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.option:hover {
+  border-color: var(--accent);
+}
+
+/* ---------- Diplomacy ---------- */
+.inbox-item {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px 10px;
+  margin-bottom: 8px;
+  background: var(--panel-2);
+  border-left: 3px solid var(--accent);
+  border-radius: 4px;
+  font-size: 0.85rem;
+}
+
+.btn-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.btn.small {
+  padding: 4px 8px;
+  font-size: 0.74rem;
+}
+
+.btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.btn:disabled:hover {
+  border-color: var(--border);
+}
+
+.btn.danger:hover:not(:disabled) {
+  border-color: var(--bad);
+}
+
+.action-grid {
+  display: grid;
+  gap: 8px;
+  margin: 8px 0;
+}
+
+.action {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.82rem;
+}
+
+.rel {
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
+
+.rel.good {
+  color: var(--ok);
+}
+
+.rel.bad {
+  color: var(--bad);
+}
+
+.tag {
+  display: inline-block;
+  min-width: 18px;
+  padding: 1px 5px;
+  margin-right: 3px;
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  font-size: 0.68rem;
+  text-align: center;
+}
+
+.tag.red {
+  border-color: var(--bad);
+  color: var(--bad);
+}
+
+/* ---------- Objectives ---------- */
+.obj {
+  margin-bottom: 10px;
+}
+
+.obj-head {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.85rem;
+}
+
+.bar {
+  height: 6px;
+  margin: 4px 0;
+  background: var(--panel-2);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.bar-fill {
+  height: 100%;
+  background: var(--accent);
+}
+
+.bar-fill.done {
+  background: var(--ok);
+}
+
+.score {
+  font-size: 1.6rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}

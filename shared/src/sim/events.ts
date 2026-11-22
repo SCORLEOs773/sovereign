@@ -30,3 +30,16 @@ export function raiseAlert(
   state.alerts[key] = state.tick;
   pushEvent(state, kind, text);
 }
+
+export function onCooldown(
+  state: SimState,
+  key: string,
+  months: number,
+): boolean {
+  const last = state.alerts[key];
+  return last !== undefined && state.tick - last < months * 30 * TICKS_PER_DAY;
+}
+
+export function markCooldown(state: SimState, key: string): void {
+  state.alerts[key] = state.tick;
+}

@@ -7,7 +7,7 @@ import {
   toCssColor,
 } from "../format";
 import { useGameStore } from "../store/gameStore";
-import {Stat} from "./Stat"
+import { Stat } from "./Stat";
 
 export function NationsTab({ state }: { state: SimState }) {
   const world = useGameStore((s) => s.world);

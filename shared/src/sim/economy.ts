@@ -85,6 +85,9 @@ export function growthTarget(n: NationState, noise: number): number {
     0.4 * Math.max(0, n.inflation - 0.05) -
     0.03 * Math.max(0, (50 - n.stability) / 50) -
     0.02 * Math.max(0, debtRatio - 1) +
+    n.growthBonus +
+    n.tradeBonus -
+    n.sanctionPenalty +
     noise;
 
   return clamp(g, -0.12, 0.1);

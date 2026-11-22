@@ -1,7 +1,15 @@
+import { resolveDecision } from "./decisions";
+import {
+  playerCancelTreaty,
+  playerImproveRelations,
+  playerProposeTreaty,
+  playerRespondProposal,
+  playerSetSanctions,
+} from "./diplomacy";
 import { applyPolicyPatch, type PolicyPatch } from "./policy";
 import { createDefaultScheduler, type Scheduler } from "./scheduler";
 import type { SimSpeed } from "./speed";
-import type { SimState } from "./state";
+import type { SimState, TreatyKind } from "./state";
 import { SIM_CONFIG } from "./time";
 
 export class SimulationEngine {
@@ -30,6 +38,11 @@ export class SimulationEngine {
     this.accumulatorMs = 0;
   }
 
+  /** The clock stops at game over and while a decision waits for the player. */
+  private halted(): boolean {
+    return this.state.gameOver !== null || this.state.pendingDecision !== null;
+  }
+
   /** Change the player's policy. Values are clamped to legal ranges. */
   applyPolicy(patch: PolicyPatch): void {
     if (this.state.gameOver) return;
@@ -37,9 +50,35 @@ export class SimulationEngine {
     if (nation) applyPolicyPatch(nation.policy, patch);
   }
 
+  resolveDecision(optionId: string): boolean {
+    if (this.state.gameOver) return false;
+    return resolveDecision(this.state, optionId);
+  }
+
+  improveRelations(target: number): void {
+    if (!this.state.gameOver) playerImproveRelations(this.state, target);
+  }
+
+  proposeTreaty(target: number, kind: TreatyKind): void {
+    if (!this.state.gameOver) playerProposeTreaty(this.state, target, kind);
+  }
+
+  cancelTreaty(treatyId: number): void {
+    if (!this.state.gameOver) playerCancelTreaty(this.state, treatyId);
+  }
+
+  setSanctions(target: number, active: boolean): void {
+    if (!this.state.gameOver) playerSetSanctions(this.state, target, active);
+  }
+
+  respondProposal(proposalId: number, accept: boolean): void {
+    if (!this.state.gameOver)
+      playerRespondProposal(this.state, proposalId, accept);
+  }
+
   /** Run exactly one fixed simulation step. */
   step(): void {
-    if (this.state.gameOver) return;
+    if (this.halted()) return;
     this.state.tick += 1;
     this.scheduler.runDue(this.state);
   }
@@ -47,14 +86,14 @@ export class SimulationEngine {
   /** Run many steps at once, used for offline progression. */
   fastForward(ticks: number): void {
     for (let i = 0; i < ticks; i++) {
-      if (this.state.gameOver) break;
+      if (this.halted()) break;
       this.step();
     }
   }
 
   /** Convert real elapsed milliseconds into whole ticks. Returns how many ticks ran. */
   advance(realDeltaMs: number): number {
-    if (this.speed === 0 || this.state.gameOver) return 0;
+    if (this.speed === 0 || this.halted()) return 0;
 
     const ticksPerSecond = this.speed * SIM_CONFIG.ticksPerSecondAtSpeed1;
     this.accumulatorMs += realDeltaMs;
@@ -67,7 +106,7 @@ export class SimulationEngine {
 
     let executed = 0;
     for (let i = 0; i < run; i++) {
-      if (this.state.gameOver) break;
+      if (this.halted()) break;
       this.step();
       executed++;
     }

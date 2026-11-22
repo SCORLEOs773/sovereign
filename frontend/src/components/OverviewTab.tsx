@@ -1,15 +1,16 @@
 import {
   computeBudget,
+  computeScore,
+  formatGameDate,
+  getObjectives,
   hasElections,
   nextElectionYear,
   type NationState,
   type SimState,
 } from "@sovereign/shared";
-import { formatRatio } from "../format";
+import { formatRatio, toCssColor } from "../format";
 import { useGameStore } from "../store/gameStore";
-import { formatGameDate } from "@sovereign/shared";
 import { Stat } from "./Stat";
-import { toCssColor } from "../format";
 
 export function OverviewTab({
   state,
@@ -25,6 +26,7 @@ export function OverviewTab({
   const budget = computeBudget(nation);
   const balance = budget.balance / nation.gdp;
   const latest = [...state.events].reverse().slice(0, 5);
+  const objectives = getObjectives(state);
 
   return (
     <div>
@@ -34,10 +36,13 @@ export function OverviewTab({
           style={{ background: country ? toCssColor(country.color) : "#888" }}
         />
         <div>
-          <h2 className="country-name">{country?.name}</h2>
+          <h2 className="country-name">{nation.name}</h2>
           <div className="muted small">{country?.archetype}</div>
         </div>
       </div>
+
+      <h4 className="group">Legacy score</h4>
+      <div className="score">{computeScore(state)}</div>
 
       <h4 className="group">Government</h4>
       <Stat label="System" value={nation.governmentType} />
@@ -49,6 +54,26 @@ export function OverviewTab({
             : "None in this system"
         }
       />
+      <Stat label="Term ends" value="January 2052" />
+
+      <h4 className="group">Objectives</h4>
+      {objectives.map((o) => (
+        <div key={o.id} className="obj">
+          <div className="obj-head">
+            <span>{o.title}</span>
+            <span className={o.done ? "ok" : "muted"}>
+              {o.done ? "Done" : o.status}
+            </span>
+          </div>
+          <div className="bar">
+            <div
+              className={`bar-fill ${o.done ? "done" : ""}`}
+              style={{ width: `${Math.round(o.progress * 100)}%` }}
+            />
+          </div>
+          <div className="muted small">{o.description}</div>
+        </div>
+      ))}
 
       <h4 className="group">Indicators</h4>
       <Stat label="Approval" value={`${nation.approval.toFixed(0)}%`} />
@@ -64,13 +89,16 @@ export function OverviewTab({
         label="Budget balance"
         value={`${balance >= 0 ? "+" : ""}${formatRatio(balance)} of GDP`}
       />
-
-      <h4 className="group">Your goal</h4>
-      <p className="small">
-        {electoral
-          ? "Stay in power. Elections are held every four years and you need roughly 50% approval or better on election day. If stability stays under 10% for three months, your government collapses."
-          : "Stay in power. This system holds no elections, but if stability stays under 10% for three months, your government collapses."}
-      </p>
+      <Stat
+        label="Trade boost"
+        value={`+${formatRatio(nation.tradeBonus)} growth`}
+      />
+      {nation.sanctionPenalty > 0 && (
+        <Stat
+          label="Sanctions drag"
+          value={`-${formatRatio(nation.sanctionPenalty)} growth`}
+        />
+      )}
 
       <h4 className="group">Latest news</h4>
       <ul className="event-list">

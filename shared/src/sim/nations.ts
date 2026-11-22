@@ -92,6 +92,8 @@ export function createNation(country: Country, seed: number): NationState {
 
   const nation: NationState = {
     id: country.id,
+    name: country.name,
+    region: country.region,
     governmentType: country.governmentType,
     population: country.population,
     gdp: country.gdp,
@@ -111,6 +113,9 @@ export function createNation(country: Country, seed: number): NationState {
     approvalBias: 0,
     stabilityBias: 0,
     lowStabilityMonths: 0,
+    growthBonus: 0,
+    tradeBonus: 0,
+    sanctionPenalty: 0,
     policy,
     baseline: clonePolicy(policy),
     personality: {

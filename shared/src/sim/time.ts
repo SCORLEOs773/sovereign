@@ -13,6 +13,7 @@ export const SIM_CONFIG = {
   /** Offline time passes at this fraction of 1x speed */
   offlineSpeed: 0.25,
   electionIntervalYears: 4,
+  campaignEndYear: 2052,
 } as const;
 
 export const TICKS_PER_HOUR = 60 / SIM_CONFIG.minutesPerTick;

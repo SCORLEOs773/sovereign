@@ -1,4 +1,5 @@
 import { generateWorld } from "../world/generateWorld";
+import { createInitialRelations } from "./diplomacy";
 import { pushEvent } from "./events";
 import { recordHistory } from "./history";
 import { createNation } from "./nations";
@@ -26,10 +27,21 @@ export function createInitialSimState(
     alerts: {},
     history: createEmptyHistory(),
     gameOver: null,
+    relations: createInitialRelations(seed, nations),
+    treaties: [],
+    sanctions: [],
+    proposals: [],
+    pendingDecision: null,
+    nextId: 1,
+    electionsWon: 0,
+    startGdp: player.gdp,
   };
 
-  const name = world.countries[playerCountryId]!.name;
-  pushEvent(state, "info", `You have taken office as the leader of ${name}.`);
+  pushEvent(
+    state,
+    "info",
+    `You have taken office as the leader of ${player.name}.`,
+  );
   recordHistory(state, player);
   return state;
 }

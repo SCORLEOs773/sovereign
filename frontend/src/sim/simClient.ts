@@ -4,6 +4,7 @@ import type {
   SimEvent,
   SimSnapshot,
   SimSpeed,
+  TreatyKind,
 } from "@sovereign/shared";
 import { useGameStore } from "../store/gameStore";
 import { useSimStore } from "../store/simStore";
@@ -24,7 +25,7 @@ export async function saveNow(): Promise<void> {
   const sim = useSimStore.getState();
   if (!sim.ready || !sim.state || sim.state.gameOver) return;
   const snapshot: SimSnapshot = {
-    version: 2,
+    version: 3,
     worldSeed: sim.state.seed,
     speed: sim.speed,
     state: sim.state,
@@ -67,6 +68,7 @@ export function continueCampaign(): void {
   const snapshot = pendingSnapshot;
   if (!snapshot) return;
   gameOverHandled = false;
+  useUiStore.getState().setMapMode("political");
   useGameStore.getState().setWorldSeed(snapshot.worldSeed);
   useGameStore.getState().selectCountry(snapshot.state.playerCountryId);
   send({
@@ -84,6 +86,7 @@ export function startCampaign(countryId: number): void {
   gameOverHandled = false;
   pendingSnapshot = null;
   void clearAutosave().catch(() => undefined);
+  useUiStore.getState().setMapMode("political");
   useGameStore.getState().selectCountry(countryId);
   send({
     type: "init",
@@ -114,4 +117,29 @@ export function setSpeed(speed: SimSpeed): void {
 export function setPolicy(patch: PolicyPatch): void {
   useSimStore.getState().patchPolicy(patch);
   send({ type: "setPolicy", policy: patch });
+}
+
+export function resolveDecision(optionId: string): void {
+  send({ type: "resolveDecision", optionId });
+  window.setTimeout(() => void saveNow(), 300);
+}
+
+export function improveRelations(target: number): void {
+  send({ type: "improveRelations", target });
+}
+
+export function proposeTreaty(target: number, kind: TreatyKind): void {
+  send({ type: "proposeTreaty", target, kind });
+}
+
+export function cancelTreaty(treatyId: number): void {
+  send({ type: "cancelTreaty", treatyId });
+}
+
+export function setSanctions(target: number, active: boolean): void {
+  send({ type: "setSanctions", target, active });
+}
+
+export function respondProposal(proposalId: number, accept: boolean): void {
+  send({ type: "respondProposal", proposalId, accept });
 }

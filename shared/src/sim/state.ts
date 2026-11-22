@@ -2,6 +2,10 @@ import { z } from "zod";
 import { PolicySchema } from "./policy";
 import { SimSpeedSchema } from "./speed";
 
+export const TREATY_KINDS = ["trade", "nonAggression", "alliance"] as const;
+export type TreatyKind = (typeof TREATY_KINDS)[number];
+export const TreatyKindSchema = z.enum(TREATY_KINDS);
+
 export const PersonalitySchema = z.object({
   /** 0..1: dislike of deficits and debt */
   thrift: z.number(),
@@ -15,6 +19,8 @@ export const PersonalitySchema = z.object({
 
 export const NationStateSchema = z.object({
   id: z.number().int(),
+  name: z.string(),
+  region: z.string(),
   governmentType: z.string(),
   population: z.number(),
   /** Annual GDP in US dollars */
@@ -36,6 +42,12 @@ export const NationStateSchema = z.object({
   approvalBias: z.number(),
   stabilityBias: z.number(),
   lowStabilityMonths: z.number().int(),
+  /** Permanent growth modifier from decisions */
+  growthBonus: z.number(),
+  /** Growth from trade agreements and alliances, refreshed monthly */
+  tradeBonus: z.number(),
+  /** Growth lost to sanctions, refreshed monthly */
+  sanctionPenalty: z.number(),
   policy: PolicySchema,
   /** The policy the nation started with, used as the neutral reference point */
   baseline: PolicySchema,
@@ -60,7 +72,45 @@ export const HistorySchema = z.object({
 });
 
 export const GameOverSchema = z.object({
-  reason: z.enum(["election", "collapse"]),
+  reason: z.enum(["election", "collapse", "retirement"]),
+  tick: z.number().int(),
+});
+
+export const TreatySchema = z.object({
+  id: z.number().int(),
+  kind: TreatyKindSchema,
+  a: z.number().int(),
+  b: z.number().int(),
+  since: z.number().int(),
+});
+
+export const SanctionSchema = z.object({
+  by: z.number().int(),
+  target: z.number().int(),
+  since: z.number().int(),
+});
+
+/** A treaty offer from an AI nation to the player */
+export const ProposalSchema = z.object({
+  id: z.number().int(),
+  from: z.number().int(),
+  kind: TreatyKindSchema,
+  tick: z.number().int(),
+  expires: z.number().int(),
+});
+
+export const DecisionOptionSchema = z.object({
+  id: z.string(),
+  label: z.string(),
+  detail: z.string(),
+});
+
+export const PendingDecisionSchema = z.object({
+  templateId: z.string(),
+  title: z.string(),
+  text: z.string(),
+  target: z.number().int().nullable(),
+  options: z.array(DecisionOptionSchema),
   tick: z.number().int(),
 });
 
@@ -73,15 +123,24 @@ export const SimStateSchema = z.object({
   playerCountryId: z.number().int(),
   nations: z.array(NationStateSchema),
   events: z.array(GameEventSchema),
-  /** Last tick each alert fired, used for cooldowns */
+  /** Last tick each alert or cooldown fired */
   alerts: z.record(z.string(), z.number()),
   /** Monthly history of the player's nation */
   history: HistorySchema,
   gameOver: GameOverSchema.nullable(),
+  /** relations[a][b] is how nation a feels about b, from -100 to 100 (kept symmetric) */
+  relations: z.array(z.array(z.number())),
+  treaties: z.array(TreatySchema),
+  sanctions: z.array(SanctionSchema),
+  proposals: z.array(ProposalSchema),
+  pendingDecision: PendingDecisionSchema.nullable(),
+  nextId: z.number().int(),
+  electionsWon: z.number().int(),
+  startGdp: z.number(),
 });
 
 export const SimSnapshotSchema = z.object({
-  version: z.literal(2),
+  version: z.literal(3),
   worldSeed: z.number().int(),
   speed: SimSpeedSchema,
   state: SimStateSchema,
@@ -94,6 +153,11 @@ export type NationState = z.infer<typeof NationStateSchema>;
 export type GameEvent = z.infer<typeof GameEventSchema>;
 export type History = z.infer<typeof HistorySchema>;
 export type GameOver = z.infer<typeof GameOverSchema>;
+export type Treaty = z.infer<typeof TreatySchema>;
+export type Sanction = z.infer<typeof SanctionSchema>;
+export type Proposal = z.infer<typeof ProposalSchema>;
+export type DecisionOption = z.infer<typeof DecisionOptionSchema>;
+export type PendingDecision = z.infer<typeof PendingDecisionSchema>;
 export type SimState = z.infer<typeof SimStateSchema>;
 export type SimSnapshot = z.infer<typeof SimSnapshotSchema>;
 

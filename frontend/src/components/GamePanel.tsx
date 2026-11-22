@@ -1,15 +1,17 @@
 import { useState } from "react";
 import type { NationState, SimState } from "@sovereign/shared";
+import { DiplomacyTab } from "./DiplomacyTab";
 import { EconomyTab } from "./EconomyTab";
 import { EventsTab } from "./EventsTab";
 import { NationsTab } from "./NationsTab";
 import { OverviewTab } from "./OverviewTab";
 
-type TabId = "overview" | "economy" | "nations" | "events";
+type TabId = "overview" | "economy" | "diplomacy" | "nations" | "events";
 
 const TABS: { id: TabId; label: string }[] = [
   { id: "overview", label: "Overview" },
   { id: "economy", label: "Economy" },
+  { id: "diplomacy", label: "Diplomacy" },
   { id: "nations", label: "Nations" },
   { id: "events", label: "News" },
 ];
@@ -38,6 +40,7 @@ export function GamePanel({
       </div>
       {tab === "overview" && <OverviewTab state={state} nation={nation} />}
       {tab === "economy" && <EconomyTab state={state} nation={nation} />}
+      {tab === "diplomacy" && <DiplomacyTab state={state} />}
       {tab === "nations" && <NationsTab state={state} />}
       {tab === "events" && <EventsTab state={state} />}
     </aside>
