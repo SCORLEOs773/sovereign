@@ -8,10 +8,13 @@ import {
 import { fetchHealth } from "../api";
 import { continueCampaign } from "../sim/simClient";
 import { useUiStore } from "../store/uiStore";
+import { WorldBackdrop } from "./WorldBackdrop";
 
 export function MainMenu() {
   const hasSave = useUiStore((s) => s.hasSave);
   const setScreen = useUiStore((s) => s.setScreen);
+  const setSettingsOpen = useUiStore((s) => s.setSettingsOpen);
+  const setIntroOpen = useUiStore((s) => s.setIntroOpen);
   const [online, setOnline] = useState<boolean | null>(null);
 
   useEffect(() => {
@@ -41,6 +44,7 @@ export function MainMenu() {
 
   return (
     <div className="menu">
+      <WorldBackdrop />
       <div className="menu-inner">
         <h1 className="menu-title">{GAME_NAME}</h1>
         <h2 className="menu-sub">{GAME_SUBTITLE}</h2>
@@ -55,6 +59,12 @@ export function MainMenu() {
           </button>
           <button className="btn-primary" onClick={newCampaign}>
             New campaign
+          </button>
+          <button className="btn" onClick={() => setSettingsOpen(true)}>
+            Settings
+          </button>
+          <button className="btn" onClick={() => setIntroOpen(true)}>
+            Watch intro
           </button>
         </div>
         <p className="menu-foot">

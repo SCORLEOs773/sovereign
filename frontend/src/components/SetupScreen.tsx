@@ -1,4 +1,4 @@
-import { startCampaign } from "../sim/simClient";
+import { setSpeed, startCampaign } from "../sim/simClient";
 import { useGameStore } from "../store/gameStore";
 import { useUiStore } from "../store/uiStore";
 import { CountryPanel } from "./CountryPanel";
@@ -8,6 +8,13 @@ export function SetupScreen() {
   const setScreen = useUiStore((s) => s.setScreen);
   const regenerateWorld = useGameStore((s) => s.regenerateWorld);
   const seed = useGameStore((s) => s.world.seed);
+
+  // Start paused so the inauguration briefing can appear before time begins
+  const play = (countryId: number): void => {
+    startCampaign(countryId);
+    setSpeed(0);
+    useUiStore.getState().setBriefingOpen(true);
+  };
 
   return (
     <div className="app">
@@ -24,7 +31,7 @@ export function SetupScreen() {
       </header>
       <div className="workspace">
         <WorldMap />
-        <CountryPanel onPlay={startCampaign} />
+        <CountryPanel onPlay={play} />
       </div>
     </div>
   );

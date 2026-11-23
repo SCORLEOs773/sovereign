@@ -2,6 +2,7 @@ import { GAME_NAME, type NationState, type SimState } from "@sovereign/shared";
 import { formatCompact, formatMoney, formatPercent } from "../format";
 import { backToMenu } from "../sim/simClient";
 import { useGameStore } from "../store/gameStore";
+import { useUiStore } from "../store/uiStore";
 import { ClockControls } from "./ClockControls";
 
 function Chip({
@@ -34,6 +35,7 @@ export function GameTopBar({
   const name = useGameStore(
     (s) => s.world.countries.find((c) => c.id === nation.id)?.name ?? "",
   );
+  const setSettingsOpen = useUiStore((s) => s.setSettingsOpen);
   const atWar = state.wars.some(
     (w) => w.attackers.includes(nation.id) || w.defenders.includes(nation.id),
   );
@@ -63,6 +65,14 @@ export function GameTopBar({
           tone={tone(nation.stability, 60, 35)}
         />
       </div>
+      <button
+        className="btn"
+        onClick={() => setSettingsOpen(true)}
+        aria-label="Settings"
+        title="Settings"
+      >
+        ⚙
+      </button>
       <button className="btn" onClick={() => void backToMenu()}>
         Menu
       </button>

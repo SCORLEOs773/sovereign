@@ -1,0 +1,323 @@
+/* ---------- Motion ---------- */
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes pop-in {
+  from {
+    opacity: 0;
+    transform: scale(0.96) translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translate(-50%, 12px);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+}
+
+.app,
+.menu {
+  animation: fade-in 0.35s ease both;
+}
+
+.modal {
+  animation: pop-in 0.22s ease both;
+}
+
+.toast {
+  animation: toast-in 0.25s ease both;
+}
+
+.btn,
+.btn-primary,
+.speed,
+.mode,
+.tab,
+.option {
+  transition:
+    border-color 0.15s,
+    background 0.15s,
+    filter 0.15s,
+    transform 0.1s;
+}
+
+.btn:active:not(:disabled),
+.btn-primary:active:not(:disabled),
+.option:active {
+  transform: scale(0.97);
+}
+
+.btn-primary.small {
+  padding: 6px 12px;
+  font-size: 0.8rem;
+  border-radius: 6px;
+}
+
+/* ---------- Menu backdrop ---------- */
+.backdrop {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0.45;
+  pointer-events: none;
+  animation: drift 45s ease-in-out infinite alternate;
+}
+
+@keyframes drift {
+  from {
+    transform: scale(1.05) translate(0, 0);
+  }
+  to {
+    transform: scale(1.2) translate(-2%, -1.5%);
+  }
+}
+
+.menu {
+  position: relative;
+  overflow: hidden;
+}
+
+.menu::after,
+.intro-vignette {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    circle at 50% 45%,
+    transparent 15%,
+    rgba(5, 8, 15, 0.9) 78%
+  );
+  pointer-events: none;
+}
+
+.menu-inner {
+  position: relative;
+  z-index: 1;
+}
+
+.menu-buttons .btn {
+  padding: 10px 16px;
+  font-size: 0.88rem;
+}
+
+/* ---------- Intro ---------- */
+.intro {
+  position: fixed;
+  inset: 0;
+  z-index: 1100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #05080f;
+  overflow: hidden;
+  text-align: center;
+  cursor: pointer;
+  animation: fade-in 0.5s ease both;
+}
+
+.intro .backdrop {
+  opacity: 0.35;
+}
+
+.intro-content {
+  position: relative;
+  z-index: 2;
+  max-width: 900px;
+  padding: 0 24px;
+}
+
+.intro-line {
+  margin: 0;
+  font-size: clamp(1.4rem, 3.6vw, 2.6rem);
+  font-weight: 300;
+  letter-spacing: 0.04em;
+  line-height: 1.4;
+  animation: line-in 3.1s ease both;
+}
+
+@keyframes line-in {
+  0% {
+    opacity: 0;
+    transform: translateY(10px);
+    filter: blur(6px);
+  }
+  18% {
+    opacity: 1;
+    transform: none;
+    filter: none;
+  }
+  82% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+.intro-title {
+  margin: 0;
+  font-size: clamp(2.6rem, 9vw, 6rem);
+  letter-spacing: 0.35em;
+  padding-left: 0.35em;
+  animation: title-in 1.6s ease both;
+}
+
+@keyframes title-in {
+  from {
+    opacity: 0;
+    letter-spacing: 0.7em;
+    filter: blur(8px);
+  }
+  to {
+    opacity: 1;
+    letter-spacing: 0.35em;
+    filter: none;
+  }
+}
+
+.intro-hint {
+  margin-top: 40px;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  animation: hint-blink 2.2s ease-in-out infinite;
+}
+
+@keyframes hint-blink {
+  0%,
+  100% {
+    opacity: 0.4;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+.intro-skip {
+  position: absolute;
+  top: 16px;
+  right: 20px;
+  z-index: 3;
+}
+
+/* ---------- Modals ---------- */
+.modal.wide {
+  width: min(580px, 92vw);
+  text-align: left;
+}
+
+.modal-backdrop.top {
+  z-index: 1050;
+}
+
+.brief-grid {
+  display: grid;
+  gap: 14px;
+  margin: 14px 0;
+}
+
+.brief-list {
+  margin: 6px 0 0;
+  padding-left: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 0.88rem;
+}
+
+.modal-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.modal-actions .btn-primary {
+  flex: 1;
+}
+
+.check-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 10px 0 16px;
+  font-size: 0.9rem;
+}
+
+.settings-foot {
+  margin: 12px 0 0;
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  text-align: center;
+}
+
+/* ---------- Guided tour ---------- */
+.tour {
+  position: fixed;
+  inset: 0;
+  z-index: 980;
+  pointer-events: none;
+}
+
+.tour-dim {
+  position: absolute;
+  inset: 0;
+  background: rgba(4, 8, 16, 0.72);
+}
+
+.tour-spot {
+  position: absolute;
+  border: 2px solid var(--accent);
+  border-radius: 10px;
+  box-shadow: 0 0 0 9999px rgba(4, 8, 16, 0.72);
+  transition: all 0.3s ease;
+}
+
+.tour-card {
+  position: absolute;
+  width: 340px;
+  max-width: calc(100vw - 28px);
+  padding: 16px 18px;
+  background: var(--panel);
+  border: 1px solid var(--accent);
+  border-radius: 12px;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
+  pointer-events: auto;
+  animation: fade-in 0.25s ease both;
+}
+
+.tour-card h3 {
+  margin: 0 0 6px;
+}
+
+.tour-card p {
+  margin: 0 0 14px;
+  font-size: 0.88rem;
+  line-height: 1.45;
+}
+
+/* ---------- Reduced motion ---------- */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

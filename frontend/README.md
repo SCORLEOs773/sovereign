@@ -1,32 +1,37 @@
-# React + TypeScript + Vite
+# Sovereign: Age of Nations
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+> Build your nation. Shape your world. Define history.
 
-Currently, two official plugins are available:
+A real-time grand strategy and geopolitical simulation that runs entirely in the browser. Pick one of 20 nations on a procedurally generated planet and govern it for twenty years against 19 AI governments.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## Features
 
-## React Compiler
+- **A living world.** A continuous, fixed-step simulation clock with pause and 1x to 10x speeds, running in a Web Worker. Autosave and offline progression use IndexedDB.
+- **A deep economy.** Taxes, spending, central-bank rates, debt, inflation, unemployment, approval and stability, all simulated monthly for every nation.
+- **Politics.** Elections every four years, crises that demand decisions, and collapse conditions.
+- **Diplomacy.** Relations, trade agreements, non-aggression pacts, alliances and sanctions, with AI nations that make and offer deals.
+- **War.** Armies, equipment and logistics driven by defence spending, occupation, alliance call-ups, ceasefires and surrender, shown live on the map.
+- **Polish.** Synthesized sound and generative music (no audio files), a guided tour, an intro, and multiple map modes.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## Tech
 
-## Expanding the Oxlint configuration
+React, TypeScript, Vite, PixiJS, Zustand, Zod, Vitest. The simulation engine is pure TypeScript in a shared package. The backend is a Cloudflare Worker (Hono). Everything is free to build and host.
 
-If you are developing a production application, we recommend enabling type-aware lint rules by installing `oxlint-tsgolint` and editing `.oxlintrc.json`:
+## Project structure
 
-```json
-{
-  "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["react", "typescript", "oxc"],
-  "options": {
-    "typeAware": true
-  },
-  "rules": {
-    "react/rules-of-hooks": "error",
-    "react/only-export-components": ["warn", { "allowConstantExport": true }]
-  }
-}
-```
+- `frontend`: the game client
+- `backend`: a Cloudflare Worker (health endpoint now, multiplayer later)
+- `shared`: world generation and the deterministic simulation engine, with tests
 
-See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rules) for the full list of rules and categories.
+## Run locally
+
+    npm install
+    npm run dev:backend    # terminal 1
+    npm run dev:frontend   # terminal 2
+    npm run test           # run the simulation tests
+
+## Controls
+
+Space pauses, 1 to 4 set speed, M mutes, Esc deselects. Scroll to zoom the map and drag to pan.
+
+Developed by Sukhad Sharma.

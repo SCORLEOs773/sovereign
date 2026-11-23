@@ -4,6 +4,7 @@ import { App } from "./App";
 import "./index.css";
 import "./gameplay.css";
 import "./military.css";
+import "./polish.css";
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
