@@ -1,4 +1,8 @@
-import { SimSnapshotSchema, type SimSnapshot } from "@sovereign/shared";
+import {
+  SimSnapshotSchema,
+  generateWorld,
+  type SimSnapshot,
+} from "@sovereign/shared";
 
 const DB_NAME = "sovereign";
 const STORE_NAME = "saves";
@@ -26,7 +30,21 @@ export async function saveAutosave(snapshot: SimSnapshot): Promise<void> {
   db.close();
 }
 
-/** Returns null if there is no save or it fails validation. */
+/** A save only makes sense if the world its seed produces is the one it was played on. */
+function matchesWorld(snapshot: SimSnapshot): boolean {
+  const world = generateWorld(snapshot.worldSeed);
+  if (world.countries.length !== snapshot.state.nations.length) return false;
+  return world.countries.every((c) => {
+    const nation = snapshot.state.nations[c.id];
+    return (
+      nation !== undefined &&
+      nation.name === c.name &&
+      nation.region === c.region
+    );
+  });
+}
+
+/** Returns null if there is no save, it fails validation, or it belongs to an older map generator. */
 export async function loadAutosave(): Promise<SimSnapshot | null> {
   const db = await openDb();
   const raw = await new Promise<unknown>((resolve, reject) => {
@@ -39,7 +57,8 @@ export async function loadAutosave(): Promise<SimSnapshot | null> {
   });
   db.close();
   const parsed = SimSnapshotSchema.safeParse(raw);
-  return parsed.success ? parsed.data : null;
+  if (!parsed.success) return null;
+  return matchesWorld(parsed.data) ? parsed.data : null;
 }
 
 export async function clearAutosave(): Promise<void> {
